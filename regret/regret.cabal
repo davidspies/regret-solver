@@ -1,0 +1,44 @@
+name:                regret
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/davidspies/regret#readme
+license:             BSD3
+license-file:        ../LICENSE
+author:              David Spies
+maintainer:          dnspies@gmail.com
+copyright:           2017 David Spies
+category:            Game
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Data.Dist
+                       Data.Map.Generic
+                       Data.Map.Mutable.Generic
+                       Data.Vector.Class
+                       Game
+                       Game.PlayerMap
+                       Game.Regret
+  other-modules:       Control.Monad.Scale
+                       Data.Dist.Internal
+                       Data.Normalizing
+                       Game.Regret.Internal
+                       Game.Regret.Monad
+  build-depends:       base >= 4.7 && < 5
+                      ,MonadRandom
+                      ,containers
+                      ,hashable
+                      ,hashtables
+                      ,mtl
+                      ,optparse-applicative
+                      ,random
+                      ,vector
+  default-language:    Haskell2010
+  ghc-options:        -Wall -Werror
+
+source-repository head
+  type:     git
+  location: https://github.com/davidspies/regret
