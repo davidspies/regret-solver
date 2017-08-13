@@ -10,7 +10,6 @@
 
 module Game.Dudo (Dudo (..)) where
 
-import Data.Constraint (Dict(Dict))
 import Data.Hashable (Hashable)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
