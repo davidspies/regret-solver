@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -11,7 +12,7 @@ module Game.KuhnPoker (KuhnPoker (..)) where
 import Data.Hashable (Hashable)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Some (Some(Some), UnParam(..))
+import Data.Some (ShowAll(..), Some(Some), UnParam(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
@@ -100,9 +101,17 @@ instance Game.Select.Items KuhnPoker where
     Fold :: Action KuhnPoker Calling
   type Value KuhnPoker = Double
 
+deriving instance Show (Action KuhnPoker p)
+deriving instance Show (Phase KuhnPoker p)
+
+instance ShowAll (Action KuhnPoker) where
+  showsPrecAll = showsPrec
+instance ShowAll (Phase KuhnPoker) where
+  showsPrecAll = showsPrec
+
 instance UnParam (Action KuhnPoker) where
   data RemoveParam (Action KuhnPoker) = UBet | UCheck | UCall | UFold
-    deriving (Eq, Ord, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable)
   unparam = \case
     Bet   -> UBet
     Check -> UCheck
@@ -111,7 +120,7 @@ instance UnParam (Action KuhnPoker) where
 
 instance UnParam (Phase KuhnPoker) where
   data RemoveParam (Phase KuhnPoker) = UBetting | UCalling
-    deriving (Eq, Ord, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable)
   unparam = \case
     Betting -> UBetting
     Calling -> UCalling

@@ -96,4 +96,4 @@ deriving instance
   , UnParam (Phase g)
   ) => Ord (Game.InfoSet (SelectGame g))
 deriving instance Hashable (RemoveParam (InfoSet g)) => Hashable (Game.InfoSet (SelectGame g))
-deriving instance Show (RemoveParam (InfoSet g)) => Show (Game.InfoSet (SelectGame g))
+deriving instance ShowAll (InfoSet g) => Show (Game.InfoSet (SelectGame g))

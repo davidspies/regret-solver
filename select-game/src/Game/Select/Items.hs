@@ -13,7 +13,7 @@ import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
-import Data.Some (Some(Some), UnParam(..))
+import Data.Some (ShowAll(..), Some(Some), UnParam(..), silentSome)
 import Orphans ()
 
 class Items g where
@@ -57,14 +57,19 @@ deriving instance
   , Ord (Reset g)
   , Ord (Reveal g)
   ) => Ord (RemoveParam (InfoSet g))
-deriving instance
+instance
   ( UnParam (Phase g)
   , UnParam (Action g)
-  , Show (RemoveParam (Action g))
-  , Show (RemoveParam (Phase g))
+  , ShowAll (Action g)
+  , ShowAll (Phase g)
   , Show (Reset g)
   , Show (Reveal g)
-  ) => Show (RemoveParam (InfoSet g))
+  ) => ShowAll (InfoSet g) where
+  showsPrecAll d InfoSet{phase,history,options} = showParen (d > 10) $
+    showString "InfoSet {phase = " . shows (silentSome phase) .
+    showString ", history = " . shows history .
+    showString ", options = " . shows (DVec.map silentSome options) .
+    showString "}"
 instance
   ( UnParam (Action g)
   , UnParam (Phase g)

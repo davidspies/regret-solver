@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -19,7 +20,7 @@ import GHC.Generics (Generic)
 import Control.Monad.Select (chance)
 import qualified Data.Dist as Dist
 import qualified Data.Map.Generic as Map
-import Data.Some (Some(Some), UnParam(..))
+import Data.Some (ShowAll(..), Some(Some), UnParam(..))
 import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap, playerList)
 import Game.Select
 import qualified Game.Select as Select (Game)
@@ -116,9 +117,17 @@ instance Game.Select.Items Dudo where
   data Reset Dudo = R {alive :: [PlayerIndex], lastClaim :: Int}
     deriving (Eq, Ord, Show, Generic, Hashable)
 
+deriving instance Show (Action Dudo p)
+deriving instance Show (Phase Dudo p)
+
+instance ShowAll (Action Dudo) where
+  showsPrecAll = showsPrec
+instance ShowAll (Phase Dudo) where
+  showsPrecAll = showsPrec
+
 instance UnParam (Action Dudo) where
   data RemoveParam (Action Dudo) = UClaim Int | UAccept | UChallenge
-    deriving (Eq, Ord, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable)
   unparam = \case
     Claim n   -> UClaim n
     Accept    -> UAccept
@@ -126,7 +135,7 @@ instance UnParam (Action Dudo) where
 
 instance UnParam (Phase Dudo) where
   data RemoveParam (Phase Dudo) = UChallenging | UClaiming
-    deriving (Eq, Ord, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable)
   unparam = \case
     Challenging -> UChallenging
     Claiming    -> UClaiming
