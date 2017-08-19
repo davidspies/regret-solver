@@ -52,7 +52,7 @@ selectPlayerActions :: (Map a, MonadRandom m)
   => a () -> SelectionPath -> m (a (SelectionPath, Double))
 selectPlayerActions acts (SelectionPath npaths) = do
   let probScale = fromIntegral npaths / fromIntegral (Map.size acts)
-  fmap ((, probScale) . SelectionPath) . Map.unionsWith (+) . map (`Map.singleton` 1) <$>
+  fmap ((, probScale) . SelectionPath) . Map.fromListWith (+) . map (, 1) <$>
     replicateM npaths (uniform $ Map.keys acts)
 
 outcomes :: Game g

@@ -53,7 +53,9 @@ class Traversable m => Map (m :: * -> *) where
   unionsWith func = foldl' (unionWith func) empty
   unions :: [m a] -> m a
   unions = unionsWith const
+  fromListWith :: (a -> a -> a) -> [(Key m, a)] -> m a
   fromList :: [(Key m, a)] -> m a
+  fromList = fromListWith (const id)
 
 type instance Key (StrictMap.Map k) = k
 
@@ -78,6 +80,7 @@ instance Ord k => Map (StrictMap.Map k) where
   empty = StrictMap.empty
   unionsWith = StrictMap.unionsWith
   unions = StrictMap.unions
+  fromListWith = StrictMap.fromListWith
   fromList = StrictMap.fromList
 
 type instance Key StrictIntMap.IntMap = Int
@@ -103,6 +106,7 @@ instance Map StrictIntMap.IntMap where
   empty = StrictIntMap.empty
   unionsWith = StrictIntMap.unionsWith
   unions = StrictIntMap.unions
+  fromListWith = StrictIntMap.fromListWith
   fromList = StrictIntMap.fromList
 
 newtype VecMap a = VecMap {unvm :: DVec.Vector (Maybe a)}
@@ -168,8 +172,8 @@ instance Map VecMap where
       Mutable.DVec.write vr k (Just v)
     ) . unvm
   empty = VecMap DVec.empty
-  fromList kvs = VecMap $ DVec.modify (\vr ->
-      forM_ kvs $ \(k,v) -> Mutable.DVec.write vr k (Just v)
+  fromListWith op kvs = VecMap $ DVec.modify (\vr ->
+      forM_ kvs $ \(k,v) -> Mutable.DVec.modify vr (Just . maybe v (`op` v)) k
     ) (DVec.replicate len Nothing)
     where
       len = maximum (map fst kvs) + 1

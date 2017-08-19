@@ -19,7 +19,6 @@ library
   build-depends:       base >= 4.7 && < 5
                      , regret
                      , select-game
-                     , constraints
                      , hashable
                      , vector
   default-language:    Haskell2010
