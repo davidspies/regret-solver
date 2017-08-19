@@ -8,6 +8,7 @@
 
 module Game.Select.Items where
 
+import Data.DList (DList)
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
@@ -75,7 +76,7 @@ instance
 
 data History g = History
   { begin   :: Reset g
-  , reveals :: [Reveal g]
+  , reveals :: DList (Reveal g)
   }
   deriving (Generic)
 deriving instance (Eq (Reset g), Eq (Reveal g)) => Eq (History g)

@@ -24,7 +24,7 @@ library
                        Game.Select.Items
                        Orphans
   build-depends:       base >= 4.7 && < 5
-                      ,constraints
+                      ,dlist
                       ,regret
                       ,hashable
                       ,vector

@@ -11,6 +11,7 @@ module Game.Select.Helpers
     ) where
 
 import Control.Monad (void)
+import qualified Data.DList as DList
 import qualified Data.Vector as DVec
 
 import qualified Data.Map.Generic as Map
@@ -22,7 +23,7 @@ import Game.Select.Internal (ActionInputs(..), SGM, StateInfos(..))
 import Game.Select.Items
 
 doReveal :: Reveal g -> InfoSet g p -> InfoSet g p
-doReveal r v@InfoSet{history=h@History{reveals}} = v{history=h{reveals = r : reveals}}
+doReveal r v@InfoSet{history=h@History{reveals}} = v{history=h{reveals = reveals `DList.snoc` r}}
 
 reveal :: PlayerIndex -> Reveal g -> SGM g ()
 reveal i r =
@@ -36,7 +37,7 @@ reset :: Reset g -> SGM g ()
 reset r =
   Select.updateState
     (\(Infos m) ->
-      Some $ Infos $ fmap (\v -> v{history = History{begin=r, reveals=[]}}) m
+      Some $ Infos $ fmap (\v -> v{history = History{begin=r, reveals=DList.empty}}) m
     )
 
 turnSelect ::

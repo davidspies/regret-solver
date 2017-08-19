@@ -11,6 +11,7 @@
 
 module Game.Select.Internal where
 
+import qualified Data.DList as DList
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
@@ -55,7 +56,7 @@ class
 startInfo :: Game g => g -> Phase g p -> InfoSet g p
 startInfo g p =
   InfoSet
-    { history = History {begin = startReset g, reveals = []}
+    { history = History {begin = startReset g, reveals = DList.empty}
     , phase = p
     , options = DVec.empty
     }
