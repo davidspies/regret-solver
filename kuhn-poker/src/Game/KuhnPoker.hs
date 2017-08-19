@@ -89,7 +89,7 @@ instance Game.Select.Items KuhnPoker where
   data Reveal KuhnPoker =
       Draw Card
     | Acts PlayerIndex (Some (Action KuhnPoker))
-    deriving (Eq, Show, Generic, Hashable)
+    deriving (Eq, Ord, Show, Generic, Hashable)
   data Phase KuhnPoker p where
     Betting :: Phase KuhnPoker Betting
     Calling :: Phase KuhnPoker Calling
@@ -102,7 +102,7 @@ instance Game.Select.Items KuhnPoker where
 
 instance UnParam (Action KuhnPoker) where
   data RemoveParam (Action KuhnPoker) = UBet | UCheck | UCall | UFold
-    deriving (Eq, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable, Show)
   unparam = \case
     Bet   -> UBet
     Check -> UCheck
@@ -111,7 +111,7 @@ instance UnParam (Action KuhnPoker) where
 
 instance UnParam (Phase KuhnPoker) where
   data RemoveParam (Phase KuhnPoker) = UBetting | UCalling
-    deriving (Eq, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable, Show)
   unparam = \case
     Betting -> UBetting
     Calling -> UCalling

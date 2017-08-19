@@ -51,6 +51,14 @@ deriving instance
 deriving instance
   ( UnParam (Phase g)
   , UnParam (Action g)
+  , Ord (RemoveParam (Action g))
+  , Ord (RemoveParam (Phase g))
+  , Ord (Reset g)
+  , Ord (Reveal g)
+  ) => Ord (RemoveParam (InfoSet g))
+deriving instance
+  ( UnParam (Phase g)
+  , UnParam (Action g)
   , Show (RemoveParam (Action g))
   , Show (RemoveParam (Phase g))
   , Show (Reset g)
@@ -71,5 +79,6 @@ data History g = History
   }
   deriving (Generic)
 deriving instance (Eq (Reset g), Eq (Reveal g)) => Eq (History g)
+deriving instance (Ord (Reset g), Ord (Reveal g)) => Ord (History g)
 deriving instance (Show (Reveal g), Show (Reset g)) => Show (History g)
 instance (Hashable (Reset g), Hashable (Reveal g)) => Hashable (History g)

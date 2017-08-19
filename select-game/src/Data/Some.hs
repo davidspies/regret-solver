@@ -18,6 +18,8 @@ class UnParam a where
 
 instance (UnParam a, Eq (RemoveParam a)) => Eq (Some a) where
   (==) (Some x) (Some y) = unparam x == unparam y
+instance (UnParam a, Ord (RemoveParam a)) => Ord (Some a) where
+  compare (Some x) (Some y) = compare (unparam x) (unparam y)
 instance (UnParam a, Show (RemoveParam a)) => Show (Some a) where
   showsPrec d (Some x) = showParen (d > 10) $ showString "Some " . showsPrec 11 (unparam x)
 instance (UnParam a, Hashable (RemoveParam a)) => Hashable (Some a) where

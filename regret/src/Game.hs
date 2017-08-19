@@ -23,7 +23,7 @@ class Items g where
   type InfoMap g :: * -> * -> *
 
 class ( Vector (Value g)
-      , Mutable.Map (InfoMap g), Mutable.Map.Key (InfoMap g) ~ InfoSet g
+      , Mutable.Map (InfoMap g), Mutable.Map.Key (InfoMap g) ~ InfoSet g, Ord (InfoSet g)
       , Map.Map (ActionMap g), Map.Key (ActionMap g) ~ Action g
       , Items g
       ) => Game g where

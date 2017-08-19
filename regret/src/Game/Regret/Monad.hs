@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Rank2Types #-}
 
@@ -19,6 +20,7 @@ import Control.Monad (ap, forM_, void, when)
 import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
+import Data.List (sortOn)
 import Data.Maybe (isNothing)
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef)
 import System.Random.MWC (GenST)
@@ -123,7 +125,7 @@ averageValue k = Regret $ do
   Env{tenv = TopEnv{accumMap}} <- ask
   liftST $ fmap normalize <$> Mutable.Map.lookup k accumMap
 
-runRegret :: (Mutable.Map m, Normalizing v)
+runRegret :: (Mutable.Map m, Ord (Key m), Normalizing v)
   => MWC.Seed -> TopRegret m v () -> [(Key m, Normal v)]
 runRegret g (TopRegret r) =
   runST $ do
@@ -136,4 +138,4 @@ runRegret g (TopRegret r) =
         , accumMap
         , randSource
         }
-    map (second normalize) <$> Mutable.Map.toList accumMap
+    sortOn fst . map (second normalize) <$> Mutable.Map.toList accumMap

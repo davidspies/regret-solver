@@ -118,7 +118,7 @@ instance Game.Select.Items Dudo where
 
 instance UnParam (Action Dudo) where
   data RemoveParam (Action Dudo) = UClaim Int | UAccept | UChallenge
-    deriving (Eq, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable, Show)
   unparam = \case
     Claim n   -> UClaim n
     Accept    -> UAccept
@@ -126,7 +126,7 @@ instance UnParam (Action Dudo) where
 
 instance UnParam (Phase Dudo) where
   data RemoveParam (Phase Dudo) = UChallenging | UClaiming
-    deriving (Eq, Generic, Hashable, Show)
+    deriving (Eq, Ord, Generic, Hashable, Show)
   unparam = \case
     Challenging -> UChallenging
     Claiming    -> UClaiming
