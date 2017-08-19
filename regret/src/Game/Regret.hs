@@ -6,7 +6,7 @@ module Game.Regret (defaultMain, module X) where
 import Control.Monad (forM_)
 import Data.Monoid ((<>))
 import Options.Applicative
-import System.Random (newStdGen)
+import System.Random.MWC (asGenIO, save, withSystemRandom)
 
 import qualified Data.Dist as Dist
 import Game (Action, Game, InfoSet)
@@ -42,7 +42,7 @@ solverOptions parser = info (go <**> helper) fullDesc
 defaultMain :: (Game g, Show (Action g), Show (InfoSet g)) => Parser g -> IO ()
 defaultMain parser = do
   SolverOptions{..} <- execParser (solverOptions parser)
-  randSource <- newStdGen
+  randSource <- withSystemRandom $ asGenIO save
   let place = runRegret randSource $ playouts game numPlayouts numPlayoutBranches
   forM_ place $ \(k, v) -> do
     print k

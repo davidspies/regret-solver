@@ -13,7 +13,7 @@ module Data.Dist.Internal
     ) where
 
 import Control.Arrow (first)
-import Control.Monad.Random (MonadRandom, getRandom)
+import Control.Monad.Random (MonadRandom, getUniform)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -49,7 +49,7 @@ accumsOf (SDist xs) = NonEmpty.scanl1 (\(cur, _) (d, y) -> (cur + d, y)) xs
 
 sample :: MonadRandom m => SDist a -> m a
 sample ds = do
-  d <- getRandom
+  d <- getUniform
   return $ snd $ fromJust $ find ((>= d) . fst) $ accumsOf ds
 
 withProbability :: SDist a -> SDist (Double, a)

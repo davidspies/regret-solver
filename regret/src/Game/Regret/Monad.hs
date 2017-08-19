@@ -3,23 +3,26 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Game.Regret.Monad
-    ( Regret
+    ( MonadRandom
+    , Regret
     , TopRegret
     , averageValue
     , addRegret
+    , getUniformR
     , regretValue
     , runRegret
     , saveRegrets_
     ) where
 
-import Control.Arrow (first, second)
+import Control.Arrow (second)
 import Control.Monad (ap, forM_, void, when)
-import Control.Monad.Random (MonadRandom(..), StdGen, random, randomR, randomRs, randoms)
-import qualified Control.Monad.Random as MonadRandom
+import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
 import Data.Maybe (isNothing)
-import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef, writeSTRef)
+import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef)
+import System.Random.MWC (GenST)
+import qualified System.Random.MWC as MWC
 
 import Control.Monad.Scale
 import Data.Map.Mutable.Generic as Mutable (Map)
@@ -37,7 +40,7 @@ data Env m s v = Env
 data TopEnv m s v = TopEnv
   { regretMap  :: m s v
   , accumMap   :: m s v
-  , randSource :: STRef s StdGen
+  , randSource :: GenST s
   }
 
 instance Applicative (Regret m v) where
@@ -66,20 +69,14 @@ instance MonadScale (Regret m v) where
     withReaderT (\e@Env{scaleFactor} -> e{scaleFactor = c * scaleFactor}) v
   coefficient = Regret $ scaleFactor <$> ask
 
-randOp :: (StdGen -> (a, StdGen)) -> Regret m v a
-randOp op = Regret $ do
-  Env{tenv=TopEnv{randSource}} <- ask
-  liftST $ do
-    g <- readSTRef randSource
-    let (res, nextG) = op g
-    writeSTRef randSource nextG
-    return res
+randOp :: (forall s. GenST s -> ST s a) -> Regret m v a
+randOp srcOp = Regret $ do
+  Env{tenv = TopEnv{randSource}} <- ask
+  liftST $ srcOp randSource
 
 instance MonadRandom (Regret m v) where
-  getRandom = randOp random
-  getRandoms = randOp (first randoms . MonadRandom.split)
-  getRandomR = randOp . randomR
-  getRandomRs r = randOp (first (randomRs r) . MonadRandom.split)
+  getUniform = randOp MWC.uniform
+  getUniformR bnds = randOp (MWC.uniformR bnds)
 
 newtype TopRegret m v a = TopRegret (forall s. ReaderT (TopEnv m s v) (ST s) a)
   deriving (Functor)
@@ -127,12 +124,12 @@ averageValue k = Regret $ do
   liftST $ fmap normalize <$> Mutable.Map.lookup k accumMap
 
 runRegret :: (Mutable.Map m, Normalizing v)
-  => StdGen -> TopRegret m v () -> [(Key m, Normal v)]
+  => MWC.Seed -> TopRegret m v () -> [(Key m, Normal v)]
 runRegret g (TopRegret r) =
   runST $ do
     regretMap <- Mutable.Map.new
     accumMap <- Mutable.Map.new
-    randSource <- newSTRef g
+    randSource <- MWC.initialize (MWC.fromSeed g)
     runReaderT r
       TopEnv
         { regretMap

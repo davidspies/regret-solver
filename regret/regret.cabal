@@ -22,19 +22,19 @@ library
                        Game
                        Game.PlayerMap
                        Game.Regret
-  other-modules:       Control.Monad.Scale
+  other-modules:       Control.Monad.Random
+                       Control.Monad.Scale
                        Data.Dist.Internal
                        Data.Normalizing
                        Game.Regret.Internal
                        Game.Regret.Monad
   build-depends:       base >= 4.7 && < 5
-                      ,MonadRandom
                       ,containers
                       ,hashable
                       ,hashtables
                       ,mtl
+                      ,mwc-random
                       ,optparse-applicative
-                      ,random
                       ,vector
   default-language:    Haskell2010
   ghc-options:        -Wall -Werror

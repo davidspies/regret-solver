@@ -7,7 +7,7 @@
 module Game.Regret.Internal (playouts) where
 
 import Control.Monad (forM, forM_, replicateM, replicateM_)
-import Control.Monad.Random (MonadRandom, uniform)
+import Control.Monad.Random (MonadRandom, uniformList)
 import Data.Foldable (foldl')
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
@@ -53,7 +53,7 @@ selectPlayerActions :: (Map a, MonadRandom m)
 selectPlayerActions acts (SelectionPath npaths) = do
   let probScale = fromIntegral npaths / fromIntegral (Map.size acts)
   fmap ((, probScale) . SelectionPath) . Map.fromListWith (+) . map (, 1) <$>
-    replicateM npaths (uniform $ Map.keys acts)
+    replicateM npaths (uniformList $ NonEmpty.fromList $ Map.keys acts)
 
 outcomes :: Game g
   => g -> PlayerIndex -> SelectionPath -> Game.State g -> PlayerMap (Dist (Action g))
