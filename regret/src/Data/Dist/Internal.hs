@@ -49,8 +49,9 @@ accumsOf (SDist xs) = NonEmpty.scanl1 (\(cur, _) (d, y) -> (cur + d, y)) xs
 
 sample :: MonadRandom m => SDist a -> m a
 sample ds = do
+  let accumed = accumsOf ds
   d <- getUniform
-  return $ snd $ fromJust $ find ((>= d) . fst) $ accumsOf ds
+  return $ snd $ fromJust $ find ((>= d) . fst) accumed
 
 withProbability :: SDist a -> SDist (Double, a)
 withProbability (SDist xs) = SDist $ NonEmpty.map (\(d, x) -> (d, (d, x))) xs
