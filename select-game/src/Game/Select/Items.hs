@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Game.Select.Items where
 
@@ -13,7 +12,7 @@ import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
-import Data.Some (ShowAll(..), Some(Some), UnParam(..), silentSome)
+import Data.Some (ShowAll(..), Some(Some), UnParam(..))
 import Orphans ()
 
 class Items g where
@@ -23,16 +22,16 @@ class Items g where
   data Reset g
   data Reveal g
 
-data InfoSet g p = InfoSet
-  { phase   :: Phase g p
-  , history :: History g
-  , options :: DVec.Vector (Action g p)
+data InfoSet' phase history action p = InfoSet
+  { phase   :: phase p
+  , history :: history
+  , options :: DVec.Vector (action p)
   }
-instance UnParam (InfoSet g) where
-  data RemoveParam (InfoSet g) = UInfoSet
-    { uphase   :: Some (Phase g)
-    , uhistory :: History g
-    , uoptions :: DVec.Vector (Some (Action g))
+instance UnParam (InfoSet' phase history action) where
+  data RemoveParam (InfoSet' phase history action) = UInfoSet
+    { uphase   :: Some phase
+    , uhistory :: history
+    , uoptions :: DVec.Vector (Some action)
     }
     deriving (Generic)
   unparam InfoSet{phase, history, options} = UInfoSet
@@ -41,50 +40,59 @@ instance UnParam (InfoSet g) where
     , uoptions = DVec.map Some options
     }
 
-deriving instance
-  ( UnParam (Phase g)
-  , UnParam (Action g)
-  , Eq (RemoveParam (Action g))
-  , Eq (RemoveParam (Phase g))
-  , Eq (Reset g)
-  , Eq (Reveal g)
-  ) => Eq (RemoveParam (InfoSet g))
-deriving instance
-  ( UnParam (Phase g)
-  , UnParam (Action g)
-  , Ord (RemoveParam (Action g))
-  , Ord (RemoveParam (Phase g))
-  , Ord (Reset g)
-  , Ord (Reveal g)
-  ) => Ord (RemoveParam (InfoSet g))
-instance
-  ( UnParam (Phase g)
-  , UnParam (Action g)
-  , ShowAll (Action g)
-  , ShowAll (Phase g)
-  , Show (Reset g)
-  , Show (Reveal g)
-  ) => ShowAll (InfoSet g) where
-  showsPrecAll d InfoSet{phase,history,options} = showParen (d > 10) $
-    showString "InfoSet {phase = " . shows (silentSome phase) .
-    showString ", history = " . shows history .
-    showString ", options = " . shows (DVec.map silentSome options) .
-    showString "}"
-instance
-  ( UnParam (Action g)
-  , UnParam (Phase g)
-  , Hashable (RemoveParam (Action g))
-  , Hashable (RemoveParam (Phase g))
-  , Hashable (Reset g)
-  , Hashable (Reveal g)
-  ) => Hashable (RemoveParam (InfoSet g))
+newtype ShowAllToShow f x = ShowAllToShow (f x)
 
-data History g = History
-  { begin   :: Reset g
-  , reveals :: DList (Reveal g)
+instance ShowAll f => Show (ShowAllToShow f x) where
+  showsPrec d (ShowAllToShow x) = showsPrecAll d x
+
+deriving instance
+  ( UnParam phase
+  , UnParam action
+  , Eq (RemoveParam action)
+  , Eq (RemoveParam phase)
+  , Eq history
+  ) => Eq (RemoveParam (InfoSet' phase history action))
+deriving instance
+  ( UnParam phase
+  , UnParam action
+  , Ord (RemoveParam action)
+  , Ord (RemoveParam phase)
+  , Ord history
+  ) => Ord (RemoveParam (InfoSet' phase history action))
+deriving instance
+  ( Show (action p)
+  , Show (phase p)
+  , Show history
+  ) => Show (InfoSet' phase history action p)
+instance
+  ( ShowAll action
+  , ShowAll phase
+  , Show history
+  ) => ShowAll (InfoSet' phase history action) where
+  showsPrecAll d InfoSet{phase, history, options} = showsPrec d InfoSet
+    { phase = ShowAllToShow phase
+    , history
+    , options = DVec.map ShowAllToShow options
+    }
+
+instance
+  ( UnParam action
+  , UnParam phase
+  , Hashable (RemoveParam action)
+  , Hashable (RemoveParam phase)
+  , Hashable history
+  ) => Hashable (RemoveParam (InfoSet' phase history action))
+
+data History' reset reveal = History
+  { begin   :: reset
+  , reveals :: DList reveal
   }
   deriving (Generic)
-deriving instance (Eq (Reset g), Eq (Reveal g)) => Eq (History g)
-deriving instance (Ord (Reset g), Ord (Reveal g)) => Ord (History g)
-deriving instance (Show (Reveal g), Show (Reset g)) => Show (History g)
-instance (Hashable (Reset g), Hashable (Reveal g)) => Hashable (History g)
+
+deriving instance (Eq reset, Eq reveal) => Eq (History' reset reveal)
+deriving instance (Ord reset, Ord reveal) => Ord (History' reset reveal)
+deriving instance (Show reveal, Show reset) => Show (History' reset reveal)
+instance (Hashable reset, Hashable reveal) => Hashable (History' reset reveal)
+
+type History g = History' (Reset g) (Reveal g)
+type InfoSet g = InfoSet' (Phase g) (History g) (Action g)
