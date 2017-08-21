@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -11,6 +12,8 @@ import Data.DList (DList)
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
+
+import Game.PlayerMap (PlayerIndex)
 
 import Data.Some (ShowAll(..), Some(Some), UnParam(..))
 import Orphans ()
@@ -23,19 +26,22 @@ class Items g where
   data Reveal g
 
 data InfoSet' phase history action p = InfoSet
-  { phase   :: phase p
+  { player  :: PlayerIndex
+  , phase   :: phase p
   , history :: history
   , options :: DVec.Vector (action p)
   }
 instance UnParam (InfoSet' phase history action) where
   data RemoveParam (InfoSet' phase history action) = UInfoSet
-    { uphase   :: Some phase
+    { uplayer  :: PlayerIndex
+    , uphase   :: Some phase
     , uhistory :: history
     , uoptions :: DVec.Vector (Some action)
     }
     deriving (Generic)
-  unparam InfoSet{phase, history, options} = UInfoSet
-    { uphase   = Some phase
+  unparam InfoSet{..} = UInfoSet
+    { uplayer  = player
+    , uphase   = Some phase
     , uhistory = history
     , uoptions = DVec.map Some options
     }
@@ -69,8 +75,9 @@ instance
   , ShowAll phase
   , Show history
   ) => ShowAll (InfoSet' phase history action) where
-  showsPrecAll d InfoSet{phase, history, options} = showsPrec d InfoSet
-    { phase = ShowAllToShow phase
+  showsPrecAll d InfoSet{..} = showsPrec d InfoSet
+    { player
+    , phase = ShowAllToShow phase
     , history
     , options = DVec.map ShowAllToShow options
     }

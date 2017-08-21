@@ -48,7 +48,7 @@ instance Game g => Game.Game (SelectGame g) where
         (game g)
         (Infos
           (initPlayerMap (getNumPlayers g)
-          (const $ Just $ startInfo g sp))
+          (\player -> Just $ startInfo g player sp))
         )
     where
       asSome (Packed v) = SGWState v

@@ -1,5 +1,6 @@
 module Control.Monad.Select
-    ( chance
+    ( Select
+    , chance
     ) where
 
 import Control.Monad.Select.Internal

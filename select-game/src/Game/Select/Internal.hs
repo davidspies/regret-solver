@@ -53,11 +53,12 @@ class
   startReset :: g -> Reset g
   startPhase :: g -> Some (Phase g)
 
-startInfo :: Game g => g -> Phase g p -> InfoSet g p
-startInfo g p =
+startInfo :: Game g => g -> PlayerIndex -> Phase g p -> InfoSet g p
+startInfo g player phase =
   InfoSet
-    { history = History {begin = startReset g, reveals = DList.empty}
-    , phase = p
+    { player
+    , history = History {begin = startReset g, reveals = DList.empty}
+    , phase
     , options = DVec.empty
     }
 
