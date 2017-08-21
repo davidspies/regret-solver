@@ -12,6 +12,7 @@
 module Game.Dudo (Dudo (..)) where
 
 import Data.Hashable (Hashable)
+import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as DVec
@@ -22,62 +23,64 @@ import qualified Data.Dist as Dist
 import qualified Data.Map.Generic as Map
 import Data.Some (ShowAll(..), Some(Some), UnParam(..))
 import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap, playerList)
+import qualified Game.PlayerMap as PlayerMap
 import Game.Select
 import qualified Game.Select as Select (Game)
 
-acceptOrChallenge, challengeOnly :: DVec.Vector (Action Dudo Challenging)
+acceptOrChallenge :: DVec.Vector (Action Dudo Challenging)
 acceptOrChallenge = DVec.fromList [Accept, Challenge]
-challengeOnly = DVec.singleton Challenge
 
 instance Select.Game Dudo where
   getNumPlayers = numPlayers
   getUtility Dudo{} p = fromMaybe 0 . Map.lookup p
-  startReset Dudo{numPlayers} = R {alive = playerList numPlayers, lastClaim = 0}
+  startReset Dudo{numPlayers} = R {alive = NonEmpty.fromList $ playerList numPlayers, lastClaim = 0}
   startPhase Dudo{} = Some Claiming
-  game Dudo{numPlayers, dieSides} = do
-    let players = playerList numPlayers
-        turns = cycle players
-        listSides = NonEmpty.fromList [1 .. dieSides]
-        claimOpts = DVec.fromList [Claim c | c <- [1 .. dieSides]]
-    noop
-    Just winner <-
-      foldUntilRightM
-        (\(alive, prevClaim) p ->
-          if alive Map.! p then do
-            roll <- chance $ Dist.normalize $ NonEmpty.map (1,) listSides
-            reveal p (Roll roll)
-            Claim playerClaim <-
-              turnSelect Claiming p $
-              DVec.slice prevClaim (dieSides - prevClaim) claimOpts
-            revealAll (ClaimMade p playerClaim)
-            challengeActs <- offTurnSelect Challenging p $ const $
-              if playerClaim == dieSides
-                then challengeOnly
-                else acceptOrChallenge
+  game g@Dudo{numPlayers, dieSides} = do
+    let
+      dieDist = Dist.normalize $ NonEmpty.map (1,) $ NonEmpty.fromList [1 .. dieSides]
+      claimOpts = DVec.fromList [Claim c | c <- [1 .. dieSides - 1]]
+      takeTurn
+        :: (PlayerIndex, Reset Dudo) -> SGM Dudo (Either PlayerIndex (PlayerIndex, Reset Dudo))
+      takeTurn (r, R{alive, lastClaim}) = do
+        dieRoll <- chance dieDist
+        if
+          | dieRoll == dieSides -> return $ Left r
+          | lastClaim >= dieSides - 1 -> return $ extractPlayer R{alive, lastClaim}
+          | otherwise -> do
+            reveal r (Roll dieRoll)
+            Claim claim <- turnSelect Claiming r (DVec.drop lastClaim claimOpts)
+            revealAll (ClaimMade r claim)
+            challengeSelections <-
+              allSelect Challenging (\p ->
+                if p `elem` alive then acceptOrChallenge else DVec.empty
+              )
             let
-              challengers =
-                map fst $
-                filter ((\case {Challenge -> True; _ -> False}) . snd) $
-                Map.toList challengeActs
-              (nowAlive, nowClaim) =
-                  if
-                    | null challengers -> (alive, playerClaim)
-                    | roll >= playerClaim ->
-                        ( foldl
-                            (flip $ Map.adjust $ const False)
-                            alive
-                            challengers
-                        , playerClaim)
-                    | otherwise -> (Map.adjust (const False) p alive, prevClaim)
-              aliveList = map fst $ filter snd $ Map.toList nowAlive
-            if null $ tail aliveList then
-                return $ Right $ head aliveList
-              else do
-                reset R{alive = aliveList, lastClaim = nowClaim}
-                return (Left (nowAlive, nowClaim))
-          else return (Left (alive, prevClaim))
-      ) (initPlayerMap numPlayers (const $ Just True), 0) turns
+              cs = PlayerMap.toList challengeSelections
+              challengers = [p | (p, a) <- cs, a == Challenge]
+              accepters = [p | (p, a) <- cs, a == Accept]
+              result = if
+                | dieRoll < claim && not (null challengers) -> R {alive, lastClaim}
+                | otherwise -> R{alive = neSnoc accepters r, lastClaim = claim}
+            reset result
+            return (extractPlayer result)
+    noop
+    winner <- iterateUntilLeft takeTurn (extractPlayer (startReset g))
     return $ pwin numPlayers winner
+
+extractPlayer :: Reset Dudo -> Either PlayerIndex (PlayerIndex, Reset Dudo)
+extractPlayer R{alive = p1 :| ps, lastClaim = claim} = case ps of
+  []         -> Left p1
+  (p2 : ps') -> Right (p1, R{alive = p2 :| ps', lastClaim = claim})
+
+iterateUntilLeft :: Monad m => (a -> m (Either b a)) -> Either b a -> m b
+iterateUntilLeft op = either return go
+  where
+    go = (either return go =<<) . op
+
+neSnoc :: [a] -> a -> NonEmpty a
+neSnoc = \case
+  [] -> (:| [])
+  (x : xs) -> (x :|) . (xs ++) . (: [])
 
 data Dudo = Dudo
   { numPlayers :: Int
@@ -88,17 +91,6 @@ pwin :: Int -> PlayerIndex -> Value Dudo
 pwin numPlayers p =
   Map.adjust (+ fromIntegral numPlayers) p
     (initPlayerMap numPlayers $ const $ Just (-1))
-
-foldUntilRightM :: Monad m
-  => (b -> a -> m (Either b c)) -> b -> [a] -> m (Maybe c)
-foldUntilRightM op = go
-  where
-    go _ [] = return Nothing
-    go base (item : items) = do
-      r <- op base item
-      case r of
-        Left v  -> go v items
-        Right w -> return (Just w)
 
 data Claiming
 data Challenging
@@ -114,8 +106,10 @@ instance Game.Select.Items Dudo where
     Challenge :: Action Dudo Challenging
   data Reveal Dudo = Roll Int | ClaimMade PlayerIndex Int
     deriving (Eq, Ord, Show, Generic, Hashable)
-  data Reset Dudo = R {alive :: [PlayerIndex], lastClaim :: Int}
+  data Reset Dudo = R {alive :: NonEmpty PlayerIndex, lastClaim :: Int}
     deriving (Eq, Ord, Show, Generic, Hashable)
+
+deriving instance Eq (Action Dudo p)
 
 deriving instance Show (Action Dudo p)
 deriving instance Show (Phase Dudo p)

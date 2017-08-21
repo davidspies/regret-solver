@@ -8,6 +8,7 @@ module Game.Select
     ( SelectGame (..)
     , Items (..)
     , Game (..)
+    , SGM
     , module X
     ) where
 
