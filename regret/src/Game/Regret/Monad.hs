@@ -10,14 +10,13 @@ module Game.Regret.Monad
     , TopRegret
     , averageValue
     , addRegret
-    , getUniformR
     , regretValue
     , runRegret
     , saveRegrets_
     ) where
 
 import Control.Monad (ap, forM_, void, when)
-import Control.Monad.Random (MonadRandom(..))
+import Control.Monad.Random (MonadRandom, MonadSTRandom(..))
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
@@ -105,14 +104,12 @@ instance MonadScale (Regret m v) where
     withReaderT (\e@Env{scaleFactor} -> e{scaleFactor = c * scaleFactor}) v
   coefficient = Regret $ scaleFactor <$> ask
 
-randOp :: (forall s. GenST s -> ST s a) -> Regret m v a
-randOp srcOp = Regret $ do
-  Env{tenv = TopEnv{randSource}} <- ask
-  liftST $ srcOp randSource
+instance MonadSTRandom (Regret m v) where
+  withGen srcOp = Regret $ do
+    Env{tenv = TopEnv{randSource}} <- ask
+    liftST $ srcOp randSource
 
-instance MonadRandom (Regret m v) where
-  getUniform = randOp MWC.uniform
-  getUniformR bnds = randOp (MWC.uniformR bnds)
+instance MonadRandom (Regret m v)
 
 newtype TopRegret m v a = TopRegret (forall s. ReaderT (TopEnv m s v) (ST s) a)
   deriving (Functor)

@@ -32,6 +32,7 @@ library
                       ,containers
                       ,hashable
                       ,hashtables
+                      ,monad-loops
                       ,mtl
                       ,mwc-random
                       ,optparse-applicative
