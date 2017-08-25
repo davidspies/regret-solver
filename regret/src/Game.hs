@@ -32,5 +32,5 @@ class ( Vector (Value g)
   getActions :: g -> InfoSet g -> ActionMap g ()
   applyActions :: g -> PlayerMap (Action g) -> State g -> Dist (State g)
   getInfoSet :: g -> PlayerIndex -> State g -> Maybe (InfoSet g)
-  getUtility :: g -> PlayerIndex -> Value g -> Double
+  getUtility :: g -> PlayerIndex -> Value g -> Float
   startState :: g -> State g

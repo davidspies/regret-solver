@@ -10,10 +10,10 @@ import Control.Monad.Reader (ReaderT, ask, withReaderT)
 import Data.Functor.Identity (Identity)
 
 class Monad m => MonadScale m where
-  scaleBy :: Double -> m a -> m a
-  coefficient :: m Double
+  scaleBy :: Float -> m a -> m a
+  coefficient :: m Float
 
-newtype ScaleT m a = ScaleT (ReaderT Double m a)
+newtype ScaleT m a = ScaleT (ReaderT Float m a)
   deriving (Functor, Applicative, Monad)
 
 instance Monad m => MonadScale (ScaleT m) where

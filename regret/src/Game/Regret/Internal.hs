@@ -49,7 +49,7 @@ probe g curState = case getPrimitiveValue g curState of
     sample (applyActions g selections curState) >>= probe g
 
 selectPlayerActions :: (Map a, MonadRandom m)
-  => a () -> SelectionPath -> m (a (SelectionPath, Double))
+  => a () -> SelectionPath -> m (a (SelectionPath, Float))
 selectPlayerActions acts (SelectionPath npaths) = do
   let probScale = fromIntegral npaths / fromIntegral (Map.size acts)
   fmap ((, probScale) . SelectionPath) . Map.fromListWith (+) . map (, 1) <$>
@@ -95,10 +95,10 @@ playout g p path curState =
         MyTurn v    -> processRegrets g p (infosets Map.! p) (policies Map.! p) v
         NotMyTurn v -> return v
 
-newtype Node m = Node (m Double)
+newtype Node m = Node (m Float)
 newtype SelectionPath = SelectionPath Int
 
-deriving instance Show (m Double) => Show (Node m)
+deriving instance Show (m Float) => Show (Node m)
 
 instance Map m => Vector (Node m) where
   scale c (Node m) = Node $ Vector.genericScaleMap c m

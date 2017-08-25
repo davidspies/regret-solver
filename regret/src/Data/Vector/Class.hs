@@ -24,7 +24,7 @@ import Data.Map.Generic (Map)
 import qualified Data.Map.Generic as Map
 
 class Vector v where
-  scale :: Double -> v -> v
+  scale :: Float -> v -> v
   add :: v -> v -> v
   vnegate :: v -> v
   vnegate = scale (-1)
@@ -57,7 +57,7 @@ instance Vector b => Vector (a -> b) where
   zero = const zero
   vsum xs z = vsum $ map ($ z) xs
 
-instance Vector Double where
+instance Vector Float where
   scale = (*)
   add = (+)
   vnegate = negate
@@ -73,12 +73,12 @@ instance (Vector a, Vector b) => Vector (a, b) where
   zero = (zero, zero)
   vsum prs = let (xs, ys) = unzip prs in (vsum xs, vsum ys)
 
-genericScaleFunctor :: (Functor m, Vector x) => Double -> m x -> m x
+genericScaleFunctor :: (Functor m, Vector x) => Float -> m x -> m x
 genericScaleFunctor = fmap . scale
 genericVNegateFunctor :: (Functor m, Vector x) => m x -> m x
 genericVNegateFunctor = fmap vnegate
 
-genericScaleMap :: (Map m, Vector x) => Double -> m x -> m x
+genericScaleMap :: (Map m, Vector x) => Float -> m x -> m x
 genericScaleMap = genericScaleFunctor
 genericAddMap :: (Map m, Vector x) => m x -> m x -> m x
 genericAddMap = Map.unionWith add
@@ -110,7 +110,7 @@ instance Vector a => Vector (Map.VecMap a) where
   zero = genericZeroMap
   vsum = genericVSumMap
 
-genericScaleApplicative :: (Applicative m, Vector x) => Double -> m x -> m x
+genericScaleApplicative :: (Applicative m, Vector x) => Float -> m x -> m x
 genericScaleApplicative = genericScaleFunctor
 genericAddApplicative :: (Applicative a, Vector x) => a x -> a x -> a x
 genericAddApplicative = liftA2 add

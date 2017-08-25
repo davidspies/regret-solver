@@ -48,7 +48,7 @@ class
   , Vector (Value g)
   ) => Game g where
   getNumPlayers :: g -> Int
-  getUtility :: g -> PlayerIndex -> Value g -> Double
+  getUtility :: g -> PlayerIndex -> Value g -> Float
   game :: g -> SGM g (Value g)
   startReset :: g -> Reset g
   startPhase :: g -> Some (Phase g)

@@ -36,7 +36,7 @@ data Env m s v = Env
   { tenv        :: TopEnv m s v
   , useMap      :: m s ()
   , used        :: STRef s [Key m]
-  , scaleFactor :: Double
+  , scaleFactor :: Float
   }
 
 data AccumNode v = AccumNode

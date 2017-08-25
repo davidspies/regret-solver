@@ -96,7 +96,7 @@ data Claiming
 data Challenging
 
 instance Game.Select.Items Dudo where
-  type Value Dudo = PlayerMap Double
+  type Value Dudo = PlayerMap Float
   data Phase Dudo p where
     Challenging :: Phase Dudo Challenging
     Claiming :: Phase Dudo Claiming

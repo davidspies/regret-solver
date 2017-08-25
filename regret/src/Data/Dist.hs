@@ -21,7 +21,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Dist.Internal as SDist
 import Data.Vector.Class
 
-type Probability = Double
+type Probability = Float
 
 data Dist a = Bottom a | Level (SDist (Dist a))
   deriving (Functor, Show)
@@ -52,7 +52,7 @@ sample d = case d of
 fromSDist :: SDist a -> Dist a
 fromSDist = Level . fmap Bottom
 
-normalize :: NonEmpty (Double, a) -> Dist a
+normalize :: NonEmpty (Float, a) -> Dist a
 normalize = fromSDist . SDist.normalize
 
 withProbability :: Dist a -> Dist (Probability, a)

@@ -21,7 +21,7 @@ type instance Map.Key IMRPS = InfoSet RPS
 instance Game.Items RPS where
   data State RPS = PreMove | PostMove (Action RPS) (Action RPS)
     deriving (Show)
-  type Value RPS = Double
+  type Value RPS = Float
   newtype (InfoSet RPS) = RPSIS PlayerIndex
     deriving (Eq, Ord, Show)
   data (Action RPS) = Rock | Paper | Scissors

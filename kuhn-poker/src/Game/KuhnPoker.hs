@@ -99,7 +99,7 @@ instance Game.Select.Items KuhnPoker where
     Check :: Action KuhnPoker Betting
     Call :: Action KuhnPoker Calling
     Fold :: Action KuhnPoker Calling
-  type Value KuhnPoker = Double
+  type Value KuhnPoker = Float
 
 deriving instance Show (Action KuhnPoker p)
 deriving instance Show (Phase KuhnPoker p)
