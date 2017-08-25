@@ -9,6 +9,7 @@ import Options.Applicative
 import System.Random.MWC (asGenIO, save, withSystemRandom)
 
 import qualified Data.Dist as Dist
+import Data.Normalizing (normalize)
 import Game (Action, Game, InfoSet)
 import Game.Regret.Internal as X
 import Game.Regret.Monad (runRegret)
@@ -44,6 +45,7 @@ defaultMain parser = do
   SolverOptions{..} <- execParser (solverOptions parser)
   randSource <- withSystemRandom $ asGenIO save
   let place = runRegret randSource $ playouts game numPlayouts numPlayoutBranches
-  forM_ place $ \(k, v) -> do
+  forM_ place $ \(k, v, count) -> do
     print k
-    print $ Dist.pieces v
+    print count
+    print $ Dist.pieces $ normalize v
