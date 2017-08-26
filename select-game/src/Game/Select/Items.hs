@@ -51,13 +51,15 @@ newtype ShowAllToShow f x = ShowAllToShow (f x)
 instance ShowAll f => Show (ShowAllToShow f x) where
   showsPrec d (ShowAllToShow x) = showsPrecAll d x
 
-deriving instance
+instance
   ( UnParam phase
-  , UnParam action
-  , Eq (RemoveParam action)
   , Eq (RemoveParam phase)
   , Eq history
-  ) => Eq (RemoveParam (InfoSet' phase history action))
+  ) => Eq (RemoveParam (InfoSet' phase history action)) where
+  -- Ignore options
+  (==) UInfoSet{uplayer=pl1, uphase=ph1, uhistory=h1}
+       UInfoSet{uplayer=pl2, uphase=ph2, uhistory=h2}
+    = (pl1, ph1, h1) == (pl2, ph2, h2)
 deriving instance
   ( UnParam phase
   , UnParam action
@@ -83,12 +85,12 @@ instance
     }
 
 instance
-  ( UnParam action
-  , UnParam phase
-  , Hashable (RemoveParam action)
+  ( UnParam phase
   , Hashable (RemoveParam phase)
   , Hashable history
-  ) => Hashable (RemoveParam (InfoSet' phase history action))
+  ) => Hashable (RemoveParam (InfoSet' phase history action)) where
+  -- Ignoring options
+  hashWithSalt d UInfoSet{uplayer, uphase, uhistory} = hashWithSalt d (uplayer, uphase, uhistory)
 
 data History' reset reveal = History
   { begin   :: reset

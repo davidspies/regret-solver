@@ -38,7 +38,6 @@ class
   , Ord (RemoveParam (Phase g))
   , Ord (Reset g)
   , Ord (Reveal g)
-  , Hashable (RemoveParam (Action g))
   , Hashable (RemoveParam (Phase g))
   , Hashable (Reset g)
   , Hashable (Reveal g)

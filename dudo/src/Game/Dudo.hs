@@ -121,7 +121,7 @@ instance ShowAll (Phase Dudo) where
 
 instance UnParam (Action Dudo) where
   data RemoveParam (Action Dudo) = UClaim Int | UAccept | UChallenge
-    deriving (Eq, Ord, Generic, Hashable)
+    deriving (Eq, Ord, Generic)
   unparam = \case
     Claim n   -> UClaim n
     Accept    -> UAccept
