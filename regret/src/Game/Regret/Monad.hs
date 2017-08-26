@@ -22,8 +22,8 @@ import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
 import Data.Maybe (isNothing)
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef, writeSTRef)
-import System.Random.MWC (GenST)
-import qualified System.Random.MWC as MWC
+import System.Random.PCG (GenST)
+import qualified System.Random.PCG as PCG
 
 import Control.Monad.Scale
 import Data.Map.Mutable.Generic as Mutable (Map)
@@ -163,13 +163,13 @@ averageValue k = Regret $ do
   liftST $ fmap (normalize . accumValue) <$> Mutable.Map.lookup k accumMap
 
 runRegret :: (Mutable.Map m, Ord (Key m), Normalizing v, Vector v)
-  => MWC.Seed -> TopRegret m v () -> [(Key m, v, Int)]
+  => PCG.FrozenGen -> TopRegret m v () -> [(Key m, v, Int)]
 runRegret g (TopRegret r) =
   runST $ do
     regretMap <- Mutable.Map.new
     accumMap <- Mutable.Map.new
     iteration <- newSTRef 0
-    randSource <- MWC.initialize (MWC.fromSeed g)
+    randSource <- PCG.restore g
     runReaderT r TopEnv{..}
     current <- readSTRef iteration
     map (\(k, x) -> (k, accumValue (update current x), visits x)) . sortOn fst <$>

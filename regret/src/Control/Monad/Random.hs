@@ -18,7 +18,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Data.STRef (modifySTRef, newSTRef, readSTRef)
 import qualified Data.Vector.Storable as DVec
 import qualified Data.Vector.Storable.Mutable as DMVec
-import System.Random.MWC (GenST, Variate, uniform, uniformR)
+import System.Random.PCG (GenST, Variate, uniform, uniformR)
 
 class Monad m => MonadRandom m where
   getUniform :: Variate a => m a
