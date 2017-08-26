@@ -2,8 +2,9 @@
 
 module Data.Map.Mutable.Generic where
 
+import Control.Arrow (first)
 import Control.Monad.ST (ST)
-import Data.Hashable (Hashable)
+import Data.Hashable (Hashable, Hashed, hashed, unhashed)
 import qualified Data.HashTable.Class as C
 import qualified Data.HashTable.ST.Cuckoo as HTM
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef)
@@ -20,17 +21,19 @@ class Map m where
   delete :: Key m -> m s v -> ST s ()
   toList :: m s v -> ST s [(Key m, v)]
 
-newtype HTable k s v = HTable (HTM.HashTable s k v)
+newtype HTable k s v = HTable (HTM.HashTable s (Hashed k) v)
 
 type instance Key (HTable k) = k
 
 instance (Eq k, Hashable k) => Map (HTable k) where
-  lookup k (HTable h) = HTM.lookup h k
-  insertWith join k v (HTable h) = HTM.lookup h k >>= HTM.insert h k . maybe v (join v)
-  insert k v (HTable h) = HTM.insert h k v
+  lookup k (HTable h) = HTM.lookup h (hashed k)
+  insertWith join k v (HTable h) = do
+    let hk = hashed k
+    HTM.lookup h hk >>= HTM.insert h hk . maybe v (join v)
+  insert k v (HTable h) = HTM.insert h (hashed k) v
   new = HTable <$> HTM.new
-  delete k (HTable h) = HTM.delete h k
-  toList (HTable h) = C.toList h
+  delete k (HTable h) = HTM.delete h (hashed k)
+  toList (HTable h) = map (first unhashed) <$> C.toList h
 
 newtype STMap m s v = STMap (STRef s (m v))
 
