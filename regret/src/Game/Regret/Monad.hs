@@ -127,10 +127,12 @@ addRegret :: (Mutable.Map m, Vector v) => Key m -> v -> Regret m v ()
 addRegret k v = Regret $ do
   Env{tenv = TopEnv{regretMap}, used, useMap, scaleFactor} <- ask
   liftST $ do
-    Mutable.Map.insertWith add k (scale scaleFactor v) regretMap
-    present <- Mutable.Map.lookup k useMap
+    let (Lookup{lookupK'}, InsertWith{insertKWith'}, Insert{insertK'}, _delete) =
+          Mutable.Map.keyedOperations k
+    insertKWith' add (scale scaleFactor v) regretMap
+    present <- lookupK' useMap
     when (isNothing present) $ do
-      Mutable.Map.insert k () useMap
+      insertK' () useMap
       modifySTRef used (k :)
 
 saveRegrets_ :: (Mutable.Map m, Vector v, Normalizing v)
@@ -144,8 +146,10 @@ saveRegrets_ (Regret r) = TopRegret $ do
     usedV <- readSTRef used
     current <- (+ 1) <$> readSTRef iteration
     forM_ usedV $ \k -> do
-      Just val <- Mutable.Map.lookup k regretMap
-      Mutable.Map.insertWith joinAccum k (newAccum current val) accumMap
+      let (Lookup{lookupK'}, InsertWith{insertKWith'}, _insert, _delete) =
+            Mutable.Map.keyedOperations k
+      Just val <- lookupK' regretMap
+      insertKWith' joinAccum (newAccum current val) accumMap
     writeSTRef iteration current
 
 regretValue :: (Normalizing v, Mutable.Map m) => Key m -> Regret m v (Maybe (Normal v))

@@ -1,6 +1,16 @@
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Map.Mutable.Generic where
+module Data.Map.Mutable.Generic
+    ( Delete (..)
+    , HTable
+    , Insert (..)
+    , InsertWith (..)
+    , Lookup (..)
+    , Key
+    , Map (..)
+    , STMap
+    ) where
 
 import Control.Arrow (first)
 import Control.Monad.ST (ST)
@@ -8,10 +18,17 @@ import Data.Hashable (Hashable, Hashed, hashed, unhashed)
 import qualified Data.HashTable.Class as C
 import qualified Data.HashTable.ST.Cuckoo as HTM
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef)
+import Prelude hiding (lookup)
 
 import qualified Data.Map.Generic as Immutable
 
 type family Key (m :: * -> * -> *)
+
+newtype Lookup m = Lookup {lookupK' :: forall s v. m s v -> ST s (Maybe v)}
+newtype InsertWith m =
+  InsertWith {insertKWith' :: forall s v. (v -> v -> v) -> v -> m s v -> ST s ()}
+newtype Insert m = Insert {insertK' :: forall s v. v -> m s v -> ST s ()}
+newtype Delete m = Delete {deleteK' :: forall s v. m s v -> ST s ()}
 
 class Map m where
   lookup :: Key m -> m s v -> ST s (Maybe v)
@@ -20,20 +37,39 @@ class Map m where
   new :: ST s (m s v)
   delete :: Key m -> m s v -> ST s ()
   toList :: m s v -> ST s [(Key m, v)]
+  keyedOperations :: Key m -> (Lookup m, InsertWith m, Insert m, Delete m)
+  keyedOperations k =
+    (Lookup (lookup k), InsertWith (`insertWith` k), Insert (insert k), Delete (delete k))
 
 newtype HTable k s v = HTable (HTM.HashTable s (Hashed k) v)
 
 type instance Key (HTable k) = k
 
+lookupHashed :: Eq k => Hashed k -> HTable k s v -> ST s (Maybe v)
+lookupHashed hk (HTable h) = HTM.lookup h hk
+
+insertHashedWith :: Eq k => (v -> v -> v) -> Hashed k -> v -> HTable k s v -> ST s ()
+insertHashedWith join hk v (HTable h) = HTM.lookup h hk >>= HTM.insert h hk . maybe v (join v)
+
+insertHashed :: Eq k => Hashed k -> v -> HTable k s v -> ST s ()
+insertHashed hk v (HTable h) = HTM.insert h hk v
+
+deleteHashed :: Eq k => Hashed k -> HTable k s v -> ST s ()
+deleteHashed hk (HTable h) = HTM.delete h hk
+
 instance (Eq k, Hashable k) => Map (HTable k) where
-  lookup k (HTable h) = HTM.lookup h (hashed k)
-  insertWith join k v (HTable h) = do
-    let hk = hashed k
-    HTM.lookup h hk >>= HTM.insert h hk . maybe v (join v)
-  insert k v (HTable h) = HTM.insert h (hashed k) v
+  lookup = lookupHashed . hashed
+  insertWith join = insertHashedWith join . hashed
+  insert = insertHashed . hashed
   new = HTable <$> HTM.new
-  delete k (HTable h) = HTM.delete h (hashed k)
+  delete = deleteHashed . hashed
   toList (HTable h) = map (first unhashed) <$> C.toList h
+  keyedOperations k = let hk = hashed k in
+    ( Lookup (lookupHashed hk)
+    , InsertWith (`insertHashedWith` hk)
+    , Insert (insertHashed hk)
+    , Delete (deleteHashed hk)
+    )
 
 newtype STMap m s v = STMap (STRef s (m v))
 
