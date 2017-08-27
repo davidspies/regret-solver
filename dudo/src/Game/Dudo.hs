@@ -21,7 +21,7 @@ import GHC.Generics (Generic)
 import Control.Monad.Select (chance)
 import qualified Data.Dist as Dist
 import qualified Data.Map.Generic as Map
-import Data.Some (ShowAll(..), Some(Some), UnParam(..))
+import Data.Some (EqAll, HashableAll, OrdAll, ShowAll(..), Some(Some), UnParam(..))
 import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap, playerList)
 import qualified Game.PlayerMap as PlayerMap
 import Game.Select
@@ -102,10 +102,12 @@ instance Game.Select.Items Dudo where
   data Phase Dudo p where
     Challenging :: Phase Dudo Challenging
     Claiming :: Phase Dudo Claiming
+    deriving (EqAll, OrdAll, HashableAll)
   data Action Dudo p where
     Claim :: Int -> Action Dudo Claiming
     Accept :: Action Dudo Challenging
     Challenge :: Action Dudo Challenging
+    deriving (EqAll, OrdAll)
   data Reveal Dudo = Roll Int | ClaimMade PlayerIndex Int
     deriving (Eq, Ord, Show, Generic, Hashable)
   data Reset Dudo = R {alive :: NonEmpty PlayerIndex, lastClaim :: Int}

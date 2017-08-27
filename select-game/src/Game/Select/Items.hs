@@ -15,7 +15,7 @@ import GHC.Generics (Generic)
 
 import Game.PlayerMap (PlayerIndex)
 
-import Data.Some (ShowAll(..), Some(Some), UnParam(..))
+import Data.Some (EqAll, HashableAll, OrdAll, ShowAll(..), Some(Some), UnParam(..))
 import Orphans ()
 
 class Items g where
@@ -52,21 +52,23 @@ instance ShowAll f => Show (ShowAllToShow f x) where
   showsPrec d (ShowAllToShow x) = showsPrecAll d x
 
 instance
-  ( UnParam phase
-  , Eq (RemoveParam phase)
+  ( EqAll phase
   , Eq history
   ) => Eq (RemoveParam (InfoSet' phase history action)) where
   -- Ignore options
   (==) UInfoSet{uplayer=pl1, uphase=ph1, uhistory=h1}
        UInfoSet{uplayer=pl2, uphase=ph2, uhistory=h2}
     = (pl1, ph1, h1) == (pl2, ph2, h2)
-deriving instance
-  ( UnParam phase
-  , UnParam action
-  , Ord (RemoveParam action)
-  , Ord (RemoveParam phase)
+instance
+  ( OrdAll phase
   , Ord history
-  ) => Ord (RemoveParam (InfoSet' phase history action))
+  ) => Ord (RemoveParam (InfoSet' phase history action)) where
+  -- Ignore options
+  compare UInfoSet{uplayer=pl1, uphase=ph1, uhistory=h1}
+          UInfoSet{uplayer=pl2, uphase=ph2, uhistory=h2}
+    = compare (pl1, ph1, h1) (pl2, ph2, h2)
+
+
 deriving instance
   ( Show (action p)
   , Show (phase p)
@@ -85,8 +87,7 @@ instance
     }
 
 instance
-  ( UnParam phase
-  , Hashable (RemoveParam phase)
+  ( HashableAll phase
   , Hashable history
   ) => Hashable (RemoveParam (InfoSet' phase history action)) where
   -- Ignoring options
@@ -102,6 +103,10 @@ deriving instance (Eq reset, Eq reveal) => Eq (History' reset reveal)
 deriving instance (Ord reset, Ord reveal) => Ord (History' reset reveal)
 deriving instance (Show reveal, Show reset) => Show (History' reset reveal)
 instance (Hashable reset, Hashable reveal) => Hashable (History' reset reveal)
+
+instance (EqAll phase, Eq history) => EqAll (InfoSet' phase history action)
+instance (OrdAll phase, Ord history) => OrdAll (InfoSet' phase history action)
+instance (HashableAll phase, Hashable history) => HashableAll (InfoSet' phase history action)
 
 type History g = History' (Reset g) (Reveal g)
 type InfoSet g = InfoSet' (Phase g) (History g) (Action g)

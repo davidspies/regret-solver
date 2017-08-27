@@ -12,7 +12,7 @@ module Game.KuhnPoker (KuhnPoker (..)) where
 import Data.Hashable (Hashable)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Some (ShowAll(..), Some(Some), UnParam(..))
+import Data.Some (EqAll, HashableAll, OrdAll, ShowAll(..), Some(Some), UnParam(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
@@ -93,11 +93,13 @@ instance Game.Select.Items KuhnPoker where
   data Phase KuhnPoker p where
     Betting :: Phase KuhnPoker Betting
     Calling :: Phase KuhnPoker Calling
+    deriving (EqAll, OrdAll, HashableAll)
   data (Action KuhnPoker p) where
     Bet :: Action KuhnPoker Betting
     Check :: Action KuhnPoker Betting
     Call :: Action KuhnPoker Calling
     Fold :: Action KuhnPoker Calling
+    deriving (EqAll, OrdAll, HashableAll)
   type Value KuhnPoker = Float
 
 deriving instance Show (Action KuhnPoker p)

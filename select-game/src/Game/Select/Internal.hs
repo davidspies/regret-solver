@@ -7,7 +7,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Game.Select.Internal where
 
@@ -34,16 +33,14 @@ newtype ActionInputs g p = ActionInputs (PlayerMap Int)
 type SGM g = Select (StateInfos g) (ActionInputs g)
 
 class
-  ( Ord (RemoveParam (Action g))
-  , Ord (RemoveParam (Phase g))
+  ( OrdAll (Action g)
+  , OrdAll (Phase g)
   , Ord (Reset g)
   , Ord (Reveal g)
-  , Hashable (RemoveParam (Phase g))
+  , HashableAll (Phase g)
   , Hashable (Reset g)
   , Hashable (Reveal g)
   , Items g
-  , UnParam (Action g)
-  , UnParam (Phase g)
   , Vector (Value g)
   ) => Game g where
   getNumPlayers :: g -> Int
@@ -82,20 +79,23 @@ instance Items g => Game.Items (SelectGame g) where
   type ActionMap (SelectGame g) = AVMap g
 
 deriving instance
-  ( Eq (RemoveParam (Action g))
-  , Eq (RemoveParam (Phase g))
+  ( EqAll (Phase g)
   , Eq (Reset g)
   , Eq (Reveal g)
-  , UnParam (Action g)
-  , UnParam (Phase g)
   ) => Eq (Game.InfoSet (SelectGame g))
 deriving instance
-  ( Ord (RemoveParam (Action g))
-  , Ord (RemoveParam (Phase g))
+  ( OrdAll (Phase g)
   , Ord (Reset g)
   , Ord (Reveal g)
-  , UnParam (Action g)
-  , UnParam (Phase g)
   ) => Ord (Game.InfoSet (SelectGame g))
-deriving instance Hashable (RemoveParam (InfoSet g)) => Hashable (Game.InfoSet (SelectGame g))
-deriving instance ShowAll (InfoSet g) => Show (Game.InfoSet (SelectGame g))
+deriving instance
+  ( HashableAll (Phase g)
+  , Hashable (Reset g)
+  , Hashable (Reveal g)
+  ) => Hashable (Game.InfoSet (SelectGame g))
+deriving instance
+  ( ShowAll (Action g)
+  , ShowAll (Phase g)
+  , Show (Reset g)
+  , Show (Reveal g)
+  ) => Show (Game.InfoSet (SelectGame g))

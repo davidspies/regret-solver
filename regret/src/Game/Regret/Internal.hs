@@ -1,9 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Game.Regret.Internal (playouts) where
 
@@ -106,8 +104,6 @@ playout g p path curState =
 
 newtype Node m = Node (m Float)
 newtype SelectionPath = SelectionPath Int
-
-deriving instance Show (m Float) => Show (Node m)
 
 instance Map m => Vector (Node m) where
   scale c (Node m) = Node $ Vector.genericScaleMap c m

@@ -1,10 +1,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Some
-    ( ShowAll(..)
+    ( EqAll
+    , HashableAll
+    , OrdAll
+    , ShowAll(..)
     , Some(..)
     , UnParam(..)
     ) where
@@ -17,14 +19,17 @@ class UnParam a where
   data RemoveParam a
   unparam :: a x -> RemoveParam a
 
+class (UnParam a, Eq (RemoveParam a)) => EqAll a
+class (UnParam a, Ord (RemoveParam a), EqAll a) => OrdAll a
 class ShowAll a where
   showsPrecAll :: Int -> a x -> ShowS
+class (UnParam a, Hashable (RemoveParam a)) => HashableAll a
 
-instance (UnParam a, Eq (RemoveParam a)) => Eq (Some a) where
+instance EqAll a => Eq (Some a) where
   (==) (Some x) (Some y) = unparam x == unparam y
-instance (UnParam a, Ord (RemoveParam a)) => Ord (Some a) where
+instance OrdAll a => Ord (Some a) where
   compare (Some x) (Some y) = compare (unparam x) (unparam y)
-instance (ShowAll a) => Show (Some a) where
+instance ShowAll a => Show (Some a) where
   showsPrec d (Some x) = showParen (d > 10) $ showString "Some " . showsPrecAll 11 x
-instance (UnParam a, Hashable (RemoveParam a)) => Hashable (Some a) where
+instance HashableAll a => Hashable (Some a) where
   hashWithSalt salt (Some x) = hashWithSalt salt (unparam x)
