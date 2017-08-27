@@ -34,8 +34,7 @@ instance Select.Game KuhnPoker where
     | p == leftPlayer = d
     | p == rightPlayer = -d
     | otherwise = error "Only a 2-player game."
-  startReset KuhnPoker = Start
-  startPhase KuhnPoker = Some Betting
+  startState KuhnPoker = (Start, Some Betting)
   game KuhnPoker = do
     noop
     leftCard <- chance (Dist.normalize $ NonEmpty.map (1,) cards)

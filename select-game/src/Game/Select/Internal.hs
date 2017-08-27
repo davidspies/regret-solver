@@ -49,14 +49,16 @@ class
   getNumPlayers :: g -> Int
   getUtility :: g -> PlayerIndex -> Value g -> Float
   game :: g -> SGM g (Value g)
-  startReset :: g -> Reset g
-  startPhase :: g -> Some (Phase g)
+  startState :: g -> (Reset g, Some (Phase g))
 
-startInfo :: Game g => g -> PlayerIndex -> Phase g p -> InfoSet g p
-startInfo g player phase =
-  InfoSet
+newtype PlayerStart g p = PlayerStart (PlayerIndex -> InfoSet g p)
+
+{-# ANN startInfo "HLint: ignore Use const" #-}
+startInfo :: Game g => g -> Some (PlayerStart g)
+startInfo g = case startState g of
+  (reset, Some phase) -> Some $ PlayerStart $ \player -> InfoSet
     { player
-    , history = History {begin = startReset g, reveals = DList.empty}
+    , history = History {begin = reset, reveals = DList.empty}
     , phase
     , options = DVec.empty
     }

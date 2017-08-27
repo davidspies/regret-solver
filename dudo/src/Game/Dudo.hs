@@ -30,12 +30,14 @@ import qualified Game.Select as Select (Game)
 acceptOrChallenge :: DVec.Vector (Action Dudo Challenging)
 acceptOrChallenge = DVec.fromList [Accept, Challenge]
 
+startReset :: Int -> Reset Dudo
+startReset numPlayers = R {alive = NonEmpty.fromList $ playerList numPlayers, lastClaim = 0}
+
 instance Select.Game Dudo where
   getNumPlayers = numPlayers
   getUtility Dudo{} p = fromMaybe 0 . Map.lookup p
-  startReset Dudo{numPlayers} = R {alive = NonEmpty.fromList $ playerList numPlayers, lastClaim = 0}
-  startPhase Dudo{} = Some Claiming
-  game g@Dudo{numPlayers, dieSides} = do
+  startState Dudo{numPlayers} = (startReset numPlayers, Some Claiming)
+  game Dudo{numPlayers, dieSides} = do
     let
       dieDist = Dist.normalize $ NonEmpty.map (1,) $ NonEmpty.fromList [1 .. dieSides]
       claimOpts = DVec.fromList [Claim c | c <- [1 .. dieSides - 1]]
@@ -64,7 +66,7 @@ instance Select.Game Dudo where
             reset result
             return (extractPlayer result)
     noop
-    winner <- iterateUntilLeft takeTurn (extractPlayer (startReset g))
+    winner <- iterateUntilLeft takeTurn (extractPlayer (startReset numPlayers))
     return $ pwin numPlayers winner
 
 extractPlayer :: Reset Dudo -> Either PlayerIndex (PlayerIndex, Reset Dudo)

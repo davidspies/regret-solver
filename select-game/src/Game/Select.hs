@@ -42,13 +42,13 @@ instance Game g => Game.Game (SelectGame g) where
     where
       i = m Map.! p
   getUtility (SelectGame g) = getUtility g
-  startState (SelectGame g) = case startPhase g of
-    Some sp ->
+  startState (SelectGame g) = case startInfo g of
+    Some (PlayerStart sp) ->
       asSome $ Select.pack $ runSelect
         (game g)
         (Infos
           (initPlayerMap (getNumPlayers g)
-          (\player -> Just $ startInfo g player sp))
+          (Just . sp))
         )
     where
       asSome (Packed v) = SGWState v
