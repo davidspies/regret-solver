@@ -11,6 +11,7 @@ module Data.Some
     , UnParam(..)
     ) where
 
+import Data.Functor.Classes (showsUnaryWith)
 import Data.Hashable (Hashable(..))
 
 data Some a = forall x. Some (a x)
@@ -30,6 +31,6 @@ instance EqAll a => Eq (Some a) where
 instance OrdAll a => Ord (Some a) where
   compare (Some x) (Some y) = compare (unparam x) (unparam y)
 instance ShowAll a => Show (Some a) where
-  showsPrec d (Some x) = showParen (d > 10) $ showString "Some " . showsPrecAll 11 x
+  showsPrec d (Some x) = showsUnaryWith showsPrecAll "Some" d x
 instance HashableAll a => Hashable (Some a) where
   hashWithSalt salt (Some x) = hashWithSalt salt (unparam x)
