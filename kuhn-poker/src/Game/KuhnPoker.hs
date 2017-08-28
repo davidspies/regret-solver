@@ -41,22 +41,22 @@ instance Select.Game KuhnPoker where
     reveal leftPlayer (Draw leftCard)
     rightCard <- chance (Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting leftCard)
     reveal rightPlayer (Draw rightCard)
-    leftAction <- turnSelect Betting leftPlayer checkOrBet
+    leftAction <- turnSelect KuhnPoker Betting leftPlayer checkOrBet
     revealAll (Acts leftPlayer $ Some leftAction)
     let compareVal = compareCards leftCard rightCard
     case leftAction of
       Bet -> do
-        rightAction <- turnSelect Calling rightPlayer callOrFold
+        rightAction <- turnSelect KuhnPoker Calling rightPlayer callOrFold
         case rightAction of
           Call -> return $ Vector.scale 2 compareVal
           Fold -> return 1
       Check -> do
-        rightAction <- turnSelect Betting rightPlayer checkOrBet
+        rightAction <- turnSelect KuhnPoker Betting rightPlayer checkOrBet
         case rightAction of
           Check -> return compareVal
           Bet   -> do
             revealAll (Acts rightPlayer $ Some rightAction)
-            secondLeftAction <- turnSelect Calling leftPlayer callOrFold
+            secondLeftAction <- turnSelect KuhnPoker Calling leftPlayer callOrFold
             return $
               case secondLeftAction of
                 Fold -> -1

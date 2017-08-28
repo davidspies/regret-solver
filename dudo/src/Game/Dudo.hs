@@ -37,7 +37,7 @@ instance Select.Game Dudo where
   getNumPlayers = numPlayers
   getUtility Dudo{} p = fromMaybe 0 . Map.lookup p
   startState Dudo{numPlayers} = (startReset numPlayers, Some Claiming)
-  game Dudo{numPlayers, dieSides} = do
+  game g@Dudo{numPlayers, dieSides} = do
     let
       dieDist = Dist.normalize $ NonEmpty.map (1,) $ NonEmpty.fromList [1 .. dieSides]
       claimOpts = DVec.fromList [Claim c | c <- [1 .. dieSides - 1]]
@@ -50,10 +50,10 @@ instance Select.Game Dudo where
           | lastClaim >= dieSides - 1 -> return $ extractPlayer R{alive, lastClaim}
           | otherwise -> do
             reveal r (Roll dieRoll)
-            Claim claim <- turnSelect Claiming r (DVec.drop lastClaim claimOpts)
+            Claim claim <- turnSelect g Claiming r (DVec.drop lastClaim claimOpts)
             revealAll (ClaimMade r claim)
             challengeSelections <-
-              allSelect Challenging (\p ->
+              allSelect g Challenging (\p ->
                 if p `elem` alive then acceptOrChallenge else DVec.empty
               )
             let
