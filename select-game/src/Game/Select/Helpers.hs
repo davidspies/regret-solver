@@ -15,11 +15,11 @@ import qualified Data.DList as DList
 import qualified Data.Vector as DVec
 
 import qualified Data.Map.Generic as Map
-import Game.PlayerMap (PlayerIndex, PlayerMap)
+import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap)
 
 import Control.Monad.Select.Internal (Some(Some), select)
 import qualified Control.Monad.Select.Internal as Select
-import Game.Select.Internal (ActionInputs(..), SGM, StateInfos(..))
+import Game.Select.Internal (ActionInputs(..), Game, SGM, StateInfos(..), getNumPlayers)
 import Game.Select.Items
 
 doReveal :: Reveal g -> InfoSet g p -> InfoSet g p
@@ -40,38 +40,45 @@ reset r =
       Some $ Infos $ fmap (\v -> v{history = History{begin=r, reveals=DList.empty}}) m
     )
 
-turnSelect ::
-  Phase g p -> PlayerIndex -> DVec.Vector (Action g p) -> SGM g (Action g p)
-turnSelect p i acts =
-  (\(ActionInputs m) -> acts DVec.! (m Map.! i))
-  <$>
-  Select.modify
-    (\(Infos m) -> Infos $
-      Map.mapWithKey
-      (\j v -> v{phase=p, options=if i == j then acts else DVec.empty}) m
-    )
+data PlayerOptions g p = PlayerOptions (Phase g p) (PlayerMap (DVec.Vector (Action g p)))
 
-offTurnSelect ::
-  Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
-  -> SGM g (PlayerMap (Action g p))
-offTurnSelect p i afn =
-  (\(ActionInputs m) -> Map.mapWithKey (\j s -> afn j DVec.! s) m)
-  <$>
-  Select.modify
-    (\(Infos m) -> Infos $
-      Map.mapWithKey (\j v ->
-        v{phase=p, options=if i == j then DVec.empty else afn j}
-      ) m
-    )
+turnOptions :: Game g => g -> Phase g p -> PlayerIndex -> DVec.Vector (Action g p)
+            -> PlayerOptions g p
+turnOptions g p i acts =
+  PlayerOptions p
+    (initPlayerMap (getNumPlayers g) (\j -> Just $ if j == i then acts else DVec.empty))
 
-allSelect ::
-     Phase g p -> (PlayerIndex -> DVec.Vector (Action g p))
+turnSelect :: Game g
+  => g -> Phase g p -> PlayerIndex -> DVec.Vector (Action g p) -> SGM g (Action g p)
+turnSelect g p i acts = (Map.! i) <$> optionsSelect (turnOptions g p i acts)
+
+offTurnOptions :: Game g
+  => g -> Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
+  -> PlayerOptions g p
+offTurnOptions g p i afn =
+  PlayerOptions p
+    (initPlayerMap (getNumPlayers g) (\j -> Just $ if j == i then DVec.empty else afn j))
+
+offTurnSelect :: Game g
+  => g -> Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
   -> SGM g (PlayerMap (Action g p))
-allSelect p afn =
-  (\(ActionInputs m) -> Map.mapWithKey (\j s -> afn j DVec.! s) m)
+offTurnSelect g p i afn = optionsSelect (offTurnOptions g p i afn)
+
+allOptions :: Game g
+  => g -> Phase g p -> (PlayerIndex -> DVec.Vector (Action g p))
+  -> PlayerOptions g p
+allOptions g p afn = PlayerOptions p (initPlayerMap (getNumPlayers g) (Just . afn))
+
+allSelect :: Game g
+  => g -> Phase g p -> (PlayerIndex -> DVec.Vector (Action g p)) -> SGM g (PlayerMap (Action g p))
+allSelect g p afn = optionsSelect (allOptions g p afn)
+
+optionsSelect :: PlayerOptions g p -> SGM g (PlayerMap (Action g p))
+optionsSelect (PlayerOptions p a) =
+  Map.intersectionWith (DVec.!) a . (\(ActionInputs m) -> m)
   <$>
   Select.modify
-    (\(Infos m) -> Infos $ Map.mapWithKey (\j v -> v{phase=p, options=afn j}) m)
+    (\(Infos m) -> Infos $ Map.mapWithKey (\j v -> v{phase=p, options=a Map.! j}) m)
 
 noop :: SGM g ()
 noop = do
