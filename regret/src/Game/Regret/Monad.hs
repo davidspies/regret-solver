@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -39,10 +40,10 @@ data Env m s v = Env
   }
 
 data AccumNode v = AccumNode
-  { accumValue :: v
-  , prevValue  :: v
-  , visits     :: Int
-  , lastUpdate :: Int
+  { accumValue :: !v
+  , prevValue  :: !v
+  , visits     :: !Int
+  , lastUpdate :: !Int
   }
 
 newAccum :: Vector v => Int -> v -> AccumNode v
@@ -59,7 +60,7 @@ update current AccumNode{..} = AccumNode
   }
 
 joinAccum :: (Normalizing v, Vector v) => AccumNode v -> AccumNode v -> AccumNode v
-joinAccum x y = AccumNode
+joinAccum !x !y = AccumNode
   { accumValue = accumValue x' `add` accumValue y'
   , prevValue = recentValue
   , visits = visits x + visits y
@@ -84,9 +85,9 @@ instance Applicative (Regret m v) where
 
 instance Monad (Regret m v) where
   return x = Regret $ return x
-  (>>=) (Regret x) f = Regret $ x >>= f'
+  (>>=) (Regret !x) f = Regret $ x >>= f'
     where
-      f' x' = let Regret z = f x' in z
+      f' !x' = let Regret z = f x' in z
 
 instance Applicative (TopRegret m v) where
   pure = return
@@ -94,12 +95,12 @@ instance Applicative (TopRegret m v) where
 
 instance Monad (TopRegret m v) where
   return x = TopRegret $ return x
-  (>>=) (TopRegret x) f = TopRegret $ x >>= f'
+  (>>=) (TopRegret !x) f = TopRegret $ x >>= f'
     where
-      f' x' = let TopRegret z = f x' in z
+      f' !x' = let TopRegret z = f x' in z
 
 instance MonadScale (Regret m v) where
-  scaleBy c (Regret v) =
+  scaleBy !c (Regret !v) =
     Regret $
     withReaderT (\e@Env{scaleFactor} -> e{scaleFactor = c * scaleFactor}) v
   coefficient = Regret $ scaleFactor <$> ask
@@ -124,7 +125,7 @@ liftSTTop :: ST s a -> ReaderT (TopEnv m s v) (ST s) a
 liftSTTop = lift
 
 addRegret :: (Mutable.Map m, Vector v) => Key m -> v -> Regret m v ()
-addRegret k v = Regret $ do
+addRegret !k !v = Regret $ do
   Env{tenv = TopEnv{regretMap}, used, useMap, scaleFactor} <- ask
   liftST $ do
     let (Lookup{lookupK'}, InsertWith{insertKWith'}, Insert{insertK'}, _delete) =

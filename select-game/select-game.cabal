@@ -18,7 +18,8 @@ library
   exposed-modules:     Data.Some
                        Control.Monad.Select
                        Game.Select
-  other-modules:       Control.Monad.Select.Internal
+  other-modules:       Data.DList.Strict
+                       Control.Monad.Select.Internal
                        Game.Select.Helpers
                        Game.Select.Internal
                        Game.Select.Items

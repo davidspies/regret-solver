@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -46,16 +47,16 @@ newtype HTable k s v = HTable (HTM.HashTable s (Hashed k) v)
 type instance Key (HTable k) = k
 
 lookupHashed :: Eq k => Hashed k -> HTable k s v -> ST s (Maybe v)
-lookupHashed hk (HTable h) = HTM.lookup h hk
+lookupHashed !hk (HTable !h) = HTM.lookup h hk
 
 insertHashedWith :: Eq k => (v -> v -> v) -> Hashed k -> v -> HTable k s v -> ST s ()
-insertHashedWith join hk v (HTable h) = HTM.lookup h hk >>= HTM.insert h hk . maybe v (join v)
+insertHashedWith join !hk !v (HTable !h) = HTM.lookup h hk >>= HTM.insert h hk . maybe v (join v)
 
 insertHashed :: Eq k => Hashed k -> v -> HTable k s v -> ST s ()
-insertHashed hk v (HTable h) = HTM.insert h hk v
+insertHashed !hk !v (HTable !h) = HTM.insert h hk v
 
 deleteHashed :: Eq k => Hashed k -> HTable k s v -> ST s ()
-deleteHashed hk (HTable h) = HTM.delete h hk
+deleteHashed !hk (HTable !h) = HTM.delete h hk
 
 instance (Eq k, Hashable k) => Map (HTable k) where
   lookup = lookupHashed . hashed

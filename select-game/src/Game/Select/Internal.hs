@@ -10,7 +10,7 @@
 
 module Game.Select.Internal where
 
-import qualified Data.DList as DList
+import qualified Data.DList.Strict as DList
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)

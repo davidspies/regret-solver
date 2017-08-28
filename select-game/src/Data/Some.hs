@@ -14,7 +14,7 @@ module Data.Some
 import Data.Functor.Classes (showsUnaryWith)
 import Data.Hashable (Hashable(..))
 
-data Some a = forall x. Some (a x)
+data Some a = forall x. Some !(a x)
 
 class UnParam a where
   data RemoveParam a

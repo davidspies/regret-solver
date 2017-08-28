@@ -11,7 +11,7 @@ module Game.Select.Helpers
     ) where
 
 import Control.Monad (void)
-import qualified Data.DList as DList
+import qualified Data.DList.Strict as DList
 import qualified Data.Vector as DVec
 
 import qualified Data.Map.Generic as Map

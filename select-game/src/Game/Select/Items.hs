@@ -14,7 +14,7 @@ module Game.Select.Items
     , Items (..)
     ) where
 
-import Data.DList (DList)
+import Data.DList.Strict (DList)
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
@@ -32,17 +32,17 @@ class Items g where
   data Reveal g
 
 data InfoSet' phase history action p = InfoSet
-  { player  :: PlayerIndex
-  , phase   :: phase p
-  , history :: history
-  , options :: DVec.Vector (action p)
+  { player  :: !PlayerIndex
+  , phase   :: !(phase p)
+  , history :: !history
+  , options :: !(DVec.Vector (action p))
   }
 instance UnParam (InfoSet' phase history action) where
   data RemoveParam (InfoSet' phase history action) = UInfoSet
-    { uplayer  :: PlayerIndex
-    , uphase   :: Some phase
-    , uhistory :: history
-    , uoptions :: DVec.Vector (Some action)
+    { uplayer  :: !PlayerIndex
+    , uphase   :: !(Some phase)
+    , uhistory :: !history
+    , uoptions :: !(DVec.Vector (Some action))
     }
     deriving (Generic)
   unparam InfoSet{..} = UInfoSet
@@ -99,8 +99,8 @@ instance
   hashWithSalt d = hashWithSalt d . determiningTuple
 
 data History' reset reveal = History
-  { begin   :: reset
-  , reveals :: DList reveal
+  { begin   :: !reset
+  , reveals :: !(DList reveal)
   }
   deriving (Generic)
 
