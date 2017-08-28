@@ -17,6 +17,7 @@ import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
 import Control.Monad.Select (chance)
+import Data.Dist (Dist)
 import qualified Data.Dist as Dist
 import qualified Data.Vector.Class as Vector
 import Game.PlayerMap (PlayerIndex, playerList)
@@ -28,6 +29,23 @@ checkOrBet = DVec.fromList [Check, Bet]
 callOrFold :: DVec.Vector (Action KuhnPoker Calling)
 callOrFold = DVec.fromList [Call, Fold]
 
+leftBetting, rightBetting :: SGM KuhnPoker (Action KuhnPoker Betting)
+[leftBetting, rightBetting] =
+  [turnSelect KuhnPoker Betting p checkOrBet | p <- [leftPlayer, rightPlayer]]
+
+leftCalling, rightCalling :: SGM KuhnPoker (Action KuhnPoker Calling)
+[leftCalling, rightCalling] =
+  [turnSelect KuhnPoker Calling p callOrFold | p <- [leftPlayer, rightPlayer]]
+
+firstDraw :: Dist Card
+firstDraw = Dist.normalize $ NonEmpty.map (1,) cards
+
+secondDrawMissing :: Card -> Dist Card
+secondDrawMissing = (missingItem !!) . fromEnum
+  where
+    missingItem =
+      [Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting c | c <- [Jack ..]]
+
 instance Select.Game KuhnPoker where
   getNumPlayers KuhnPoker = 2
   getUtility KuhnPoker p d
@@ -37,26 +55,26 @@ instance Select.Game KuhnPoker where
   startState KuhnPoker = (Start, Some Betting)
   game KuhnPoker = do
     noop
-    leftCard <- chance (Dist.normalize $ NonEmpty.map (1,) cards)
+    leftCard <- chance firstDraw
     reveal leftPlayer (Draw leftCard)
-    rightCard <- chance (Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting leftCard)
+    rightCard <- chance (secondDrawMissing leftCard)
     reveal rightPlayer (Draw rightCard)
-    leftAction <- turnSelect KuhnPoker Betting leftPlayer checkOrBet
+    leftAction <- leftBetting
     revealAll (Acts leftPlayer $ Some leftAction)
     let compareVal = compareCards leftCard rightCard
     case leftAction of
       Bet -> do
-        rightAction <- turnSelect KuhnPoker Calling rightPlayer callOrFold
+        rightAction <- rightCalling
         case rightAction of
           Call -> return $ Vector.scale 2 compareVal
           Fold -> return 1
       Check -> do
-        rightAction <- turnSelect KuhnPoker Betting rightPlayer checkOrBet
+        rightAction <- rightBetting
         case rightAction of
           Check -> return compareVal
           Bet   -> do
             revealAll (Acts rightPlayer $ Some rightAction)
-            secondLeftAction <- turnSelect KuhnPoker Calling leftPlayer callOrFold
+            secondLeftAction <- leftCalling
             return $
               case secondLeftAction of
                 Fold -> -1
