@@ -48,12 +48,12 @@ class
   game :: g -> SGM g (Value g)
   startState :: g -> (Reset g, Some (Phase g))
 
-newtype PlayerStart g p = PlayerStart (PlayerIndex -> InfoSet g p)
+data PlayerStart g = forall p. PlayerStart (PlayerIndex -> InfoSet g p)
 
 {-# ANN startInfo "HLint: ignore Use const" #-}
-startInfo :: Game g => g -> Some (PlayerStart g)
+startInfo :: Game g => g -> PlayerStart g
 startInfo g = case startState g of
-  (reset, Some phase) -> Some $ PlayerStart $ \player -> InfoSet
+  (reset, Some phase) -> PlayerStart $ \player -> InfoSet
     { player
     , history = History {begin = reset, reveals = DList.empty}
     , phase

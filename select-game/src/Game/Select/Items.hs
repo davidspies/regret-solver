@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -57,9 +58,9 @@ newtype ShowAllToShow f x = ShowAllToShow (f x)
 instance ShowAll f => Show (ShowAllToShow f x) where
   showsPrec d (ShowAllToShow x) = showsPrecAll d x
 
-determiningTuple
-  :: RemoveParam (InfoSet' phase history action) -> (PlayerIndex, Some phase, history)
-determiningTuple UInfoSet {uplayer, uphase, uhistory} = (uplayer, uphase, uhistory)
+determiningTuple :: RemoveParam (InfoSet' phase history action)
+                 -> (PlayerIndex, Some phase, history)
+determiningTuple UInfoSet {..} = (uplayer, uphase, uhistory)
 
 instance
   ( EqAll phase
@@ -102,16 +103,12 @@ data History' reset reveal = History
   { begin   :: reset
   , reveals :: DList reveal
   }
-  deriving (Generic)
-
-deriving instance (Eq reset, Eq reveal) => Eq (History' reset reveal)
-deriving instance (Ord reset, Ord reveal) => Ord (History' reset reveal)
-deriving instance (Show reveal, Show reset) => Show (History' reset reveal)
-instance (Hashable reset, Hashable reveal) => Hashable (History' reset reveal)
+  deriving (Eq, Ord, Show, Generic, Hashable)
 
 instance (EqAll phase, Eq history) => EqAll (InfoSet' phase history action)
 instance (OrdAll phase, Ord history) => OrdAll (InfoSet' phase history action)
-instance (HashableAll phase, Hashable history) => HashableAll (InfoSet' phase history action)
+instance (HashableAll phase, Hashable history)
+  => HashableAll (InfoSet' phase history action)
 
 type History g = History' (Reset g) (Reveal g)
 type InfoSet g = InfoSet' (Phase g) (History g) (Action g)

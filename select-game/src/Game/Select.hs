@@ -43,7 +43,7 @@ instance Game g => Game.Game (SelectGame g) where
       i = m Map.! p
   getUtility (SelectGame g) = getUtility g
   startState (SelectGame g) = case startInfo g of
-    Some (PlayerStart sp) ->
+    PlayerStart sp ->
       asSome $ Select.pack $ runSelect
         (game g)
         (Infos
