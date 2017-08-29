@@ -74,11 +74,12 @@ allSelect :: Game g
 allSelect g p afn = optionsSelect (allOptions g p afn)
 
 optionsSelect :: PlayerOptions g p -> SGM g (PlayerMap (Action g p))
-optionsSelect (PlayerOptions p a) =
-  Map.intersectionWith (DVec.!) a . (\(ActionInputs m) -> m)
+optionsSelect (PlayerOptions phase playerOptions) =
+  Map.intersectionWith (DVec.!) playerOptions . (\(ActionInputs m) -> m)
   <$>
-  Select.modify
-    (\(Infos m) -> Infos $ Map.mapWithKey (\j v -> v{phase=p, options=a Map.! j}) m)
+  Select.modify (\(Infos infos) ->
+    Infos $ Map.intersectionWith (\state options -> state{phase, options}) infos playerOptions
+  )
 
 noop :: SGM g ()
 noop = do

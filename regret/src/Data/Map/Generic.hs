@@ -126,15 +126,13 @@ resizedv v n =
 vhasKey :: Int -> DVec.Vector (Maybe a) -> Bool
 vhasKey n x = maybe False isJust (x DVec.!? n)
 
-unifyLengths ::
-     DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
+unifyLengths :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
   -> (DVec.Vector (Maybe a), DVec.Vector (Maybe b))
 unifyLengths x y = (resizedv x lm, resizedv y lm)
   where
     determineLJ :: Int -> Int
     determineLJ 0 = 0
-    determineLJ n =
-      if vhasKey (n - 1) x || vhasKey (n - 1) y then n else determineLJ (n - 1)
+    determineLJ n = if vhasKey (n - 1) x || vhasKey (n - 1) y then n else determineLJ (n - 1)
     lm = determineLJ (max (DVec.length x) (DVec.length y))
 
 instance Map VecMap where
