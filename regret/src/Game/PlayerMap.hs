@@ -21,6 +21,7 @@ module Game.PlayerMap
     ) where
 
 import Data.Hashable (Hashable)
+import qualified Data.Strict.Maybe as Strict
 import qualified Data.Vector as DVec
 import Prelude hiding (elem, lookup)
 
@@ -40,4 +41,4 @@ playerList numPlayers = map PI [0..(numPlayers-1)]
 
 initPlayerMap :: Int -> (PlayerIndex -> Maybe a) -> PlayerMap a
 initPlayerMap numPlayers playerOp =
-  PlayerMap $ VecMap $ DVec.generate numPlayers (playerOp . PI)
+  PlayerMap $ VecMap $ DVec.generate numPlayers (maybe Strict.Nothing Strict.Just . playerOp . PI)

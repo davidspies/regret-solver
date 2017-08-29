@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -39,10 +40,10 @@ data Env m s v = Env
   }
 
 data AccumNode v = AccumNode
-  { accumValue :: v
-  , prevValue  :: v
-  , visits     :: Int
-  , lastUpdate :: Int
+  { accumValue :: !v
+  , prevValue  :: !v
+  , visits     :: !Int
+  , lastUpdate :: !Int
   }
 
 newAccum :: Vector v => Int -> v -> AccumNode v
@@ -59,7 +60,7 @@ update current AccumNode{..} = AccumNode
   }
 
 joinAccum :: (Normalizing v, Vector v) => AccumNode v -> AccumNode v -> AccumNode v
-joinAccum x y = AccumNode
+joinAccum !x !y = AccumNode
   { accumValue = accumValue x' `add` accumValue y'
   , prevValue = recentValue
   , visits = visits x + visits y

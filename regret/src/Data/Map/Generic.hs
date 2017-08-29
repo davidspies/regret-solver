@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -14,10 +15,13 @@ import Control.Monad (forM_)
 import qualified Data.IntMap.Strict as StrictIntMap
 import Data.List (foldl')
 import qualified Data.Map.Strict as StrictMap
-import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing)
+import Data.Maybe (fromJust, isJust, mapMaybe)
+import qualified Data.Strict.Maybe as Strict
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as Mutable.DVec
 import Prelude hiding (elem, lookup)
+
+import Orphans ()
 
 type family Key (m :: * -> *) :: *
 
@@ -109,25 +113,25 @@ instance Map StrictIntMap.IntMap where
   fromListWith = StrictIntMap.fromListWith
   fromList = StrictIntMap.fromList
 
-newtype VecMap a = VecMap {unvm :: DVec.Vector (Maybe a)}
+newtype VecMap a = VecMap {unvm :: DVec.Vector (Strict.Maybe a)}
   deriving (Functor, Foldable, Traversable, Show)
 
 type instance Key VecMap = Int
 
-resizedv :: DVec.Vector (Maybe a) -> Int -> DVec.Vector (Maybe a)
+resizedv :: DVec.Vector (Strict.Maybe a) -> Int -> DVec.Vector (Strict.Maybe a)
 resizedv v n =
   case compare lv n of
-    LT -> v DVec.++ DVec.replicate (n - lv) Nothing
+    LT -> v DVec.++ DVec.replicate (n - lv) Strict.Nothing
     EQ -> v
     GT -> DVec.slice 0 n v
   where
     lv = DVec.length v
 
-vhasKey :: Int -> DVec.Vector (Maybe a) -> Bool
-vhasKey n x = maybe False isJust (x DVec.!? n)
+vhasKey :: Int -> DVec.Vector (Strict.Maybe a) -> Bool
+vhasKey n x = maybe False Strict.isJust (x DVec.!? n)
 
-unifyLengths :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
-  -> (DVec.Vector (Maybe a), DVec.Vector (Maybe b))
+unifyLengths :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe b)
+  -> (DVec.Vector (Strict.Maybe a), DVec.Vector (Strict.Maybe b))
 unifyLengths x y = (resizedv x lm, resizedv y lm)
   where
     determineLJ :: Int -> Int
@@ -135,44 +139,47 @@ unifyLengths x y = (resizedv x lm, resizedv y lm)
     determineLJ n = if vhasKey (n - 1) x || vhasKey (n - 1) y then n else determineLJ (n - 1)
     lm = determineLJ (max (DVec.length x) (DVec.length y))
 
+strictCatMaybes :: [Strict.Maybe a] -> [a]
+strictCatMaybes = mapMaybe (Strict.maybe Nothing Just)
+
 instance Map VecMap where
-  lookup k (VecMap v) = fromMaybe Nothing (v DVec.!? k)
+  lookup k (VecMap v) = maybe Nothing (Strict.maybe Nothing Just) (v DVec.!? k)
   adjust func k = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.modify vr (fmap func) k
+      Mutable.DVec.modify vr (fmap func $!) k
     ) . unvm
-  null = all isNothing . unvm
-  (!) (VecMap v) = fromJust . (v DVec.!)
-  toList = catMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
-  mapWithKey func = VecMap . DVec.imap (fmap . func) . unvm
+  null = all Strict.isNothing . unvm
+  (!) (VecMap v) = Strict.fromJust . (v DVec.!)
+  toList = strictCatMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
+  mapWithKey func = VecMap . DVec.imap (\k -> fmap (func k $!)) . unvm
   size = length
-  elems = catMaybes . DVec.toList . unvm
+  elems = strictCatMaybes . DVec.toList . unvm
   delete k = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.write vr k Nothing
+      Mutable.DVec.write vr k Strict.Nothing
     ) . unvm
   unionWith func (VecMap x) (VecMap y) = VecMap $ DVec.zipWith func' x' y'
     where
       (x', y') = unifyLengths x y
-      func' Nothing y1          = y1
-      func' x1 Nothing          = x1
-      func' (Just x1) (Just y1) = Just $ func x1 y1
+      func' Strict.Nothing y1                   = y1
+      func' x1 Strict.Nothing                   = x1
+      func' (Strict.Just !x1) (Strict.Just !y1) = Strict.Just $ func x1 y1
   intersectionWith func (VecMap x) (VecMap y) =
       VecMap $ DVec.zipWith func' x' y'
     where
       (x', y') = unifyLengths x y
-      func' (Just x1) (Just y1) = Just $ func x1 y1
-      func' _ _                 = Nothing
-  singleton k v =
-    VecMap (DVec.replicate k Nothing DVec.++ DVec.singleton (Just v))
-  insertWith func k v = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.modify vr (Just . maybe v (func v)) k
+      func' (Strict.Just !x1) (Strict.Just !y1) = Strict.Just $ func x1 y1
+      func' _ _                                 = Strict.Nothing
+  singleton k !v =
+    VecMap (DVec.replicate k Strict.Nothing DVec.++ DVec.singleton (Strict.Just v))
+  insertWith func k !v = VecMap . DVec.modify (\vr ->
+      Mutable.DVec.modify vr (Strict.Just . Strict.maybe v (func v $!)) k
     ) . unvm
-  insert k v = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.write vr k (Just v)
+  insert k !v = VecMap . DVec.modify (\vr ->
+      Mutable.DVec.write vr k (Strict.Just v)
     ) . unvm
   empty = VecMap DVec.empty
   fromListWith op kvs = VecMap $ DVec.modify (\vr ->
-      forM_ kvs $ \(k,v) -> Mutable.DVec.modify vr (Just . maybe v (`op` v)) k
-    ) (DVec.replicate len Nothing)
+      forM_ kvs $ \(k,!v) -> Mutable.DVec.modify vr (Strict.Just . Strict.maybe v ((`op` v) $!)) k
+    ) (DVec.replicate len Strict.Nothing)
     where
       len = maximum (map fst kvs) + 1
 
