@@ -49,7 +49,7 @@ instance Select.Game Dudo where
           | dieRoll == dieSides -> return $ Left r
           | lastClaim >= dieSides - 1 -> return $ extractPlayer R{alive, lastClaim}
           | otherwise -> do
-            reveal r (Roll dieRoll)
+            reveal r (if dieRoll > lastClaim then Roll dieRoll else UnderRoll)
             Claim claim <- turnSelect g Claiming r (DVec.drop lastClaim claimOpts)
             revealAll (ClaimMade r claim)
             challengeSelections <-
@@ -108,7 +108,7 @@ instance Game.Select.Items Dudo where
     Accept :: Action Dudo Challenging
     Challenge :: Action Dudo Challenging
     deriving (EqAll, OrdAll)
-  data Reveal Dudo = Roll Int | ClaimMade PlayerIndex Int
+  data Reveal Dudo = UnderRoll | Roll Int | ClaimMade PlayerIndex Int
     deriving (Eq, Ord, Show, Generic, Hashable)
   data Reset Dudo = R {alive :: NonEmpty PlayerIndex, lastClaim :: Int}
     deriving (Eq, Ord, Show, Generic, Hashable)
