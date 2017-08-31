@@ -15,6 +15,7 @@ import Data.Hashable (Hashable)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
+import Data.MemoTrie (memo, memo2)
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
@@ -39,23 +40,26 @@ instance Select.Game Dudo where
   startState Dudo{numPlayers} = (startReset numPlayers, Some Claiming)
   game g@Dudo{numPlayers, dieSides} = do
     let
-      dieDist = Dist.normalize $ NonEmpty.map (1,) $ NonEmpty.fromList [1 .. dieSides]
       claimOpts = DVec.fromList [Claim c | c <- [1 .. dieSides - 1]]
+      claimSelect :: PlayerIndex -> Int -> SGM Dudo (Action Dudo Claiming)
+      claimSelect = memo2 $ \r lastClaim -> turnSelect g Claiming r (DVec.drop lastClaim claimOpts)
+      challengeSelect :: [PlayerIndex] -> SGM Dudo (PlayerMap (Action Dudo Challenging))
+      challengeSelect = memo $ \alive ->
+        allSelect g Challenging (\p -> if p `elem` alive then acceptOrChallenge else DVec.empty)
+      dieChance :: SGM Dudo Int
+      dieChance = chance $ Dist.normalize $ NonEmpty.map (1,) $ NonEmpty.fromList [1 .. dieSides]
       takeTurn
         :: (PlayerIndex, Reset Dudo) -> SGM Dudo (Either PlayerIndex (PlayerIndex, Reset Dudo))
       takeTurn (r, R{alive, lastClaim}) = do
-        dieRoll <- chance dieDist
+        dieRoll <- dieChance
         if
           | dieRoll == dieSides -> return $ Left r
           | lastClaim >= dieSides - 1 -> return $ extractPlayer R{alive, lastClaim}
           | otherwise -> do
             reveal r (if dieRoll > lastClaim then Roll dieRoll else UnderRoll)
-            Claim claim <- turnSelect g Claiming r (DVec.drop lastClaim claimOpts)
+            Claim claim <- claimSelect r lastClaim
             revealAll (ClaimMade r claim)
-            challengeSelections <-
-              allSelect g Challenging (\p ->
-                if p `elem` alive then acceptOrChallenge else DVec.empty
-              )
+            challengeSelections <- challengeSelect $ NonEmpty.toList alive
             let
               cs = PlayerMap.toList challengeSelections
               challengers = [p | (p, a) <- cs, a == Challenge]
