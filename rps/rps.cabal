@@ -1,37 +1,38 @@
-name:                rps
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/davidspies/rps#readme
-license:             GPL-3
-license-file:        LICENSE
-author:              David Spies
-maintainer:          dnspies@gmail.com
-copyright:           2017 David Spies
-category:            Game
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
-
-library
-  hs-source-dirs:      src
-  exposed-modules:     Game.RPS
-  build-depends:       base >= 4.7 && < 5
-                     , regret
-                     , containers
-  default-language:    Haskell2010
-  ghc-options:        -Wall -Werror
-
-executable rps
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  build-depends:       base
-                     , rps
-                     , regret
-  default-language:    Haskell2010
-  ghc-options:        -Wall -Werror
+name: rps
+version: 0.1.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: GPL-3
+license-file: LICENSE
+copyright: 2017 David Spies
+maintainer: dnspies@gmail.com
+homepage: https://github.com/davidspies/rps#readme
+category: Game
+author: David Spies
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
-  location: https://github.com/davidspies/regret
+    type: git
+    location: https://github.com/davidspies/regret
+
+library
+    exposed-modules:
+        Game.RPS
+    build-depends:
+        base >=4.7 && <5,
+        regret -any,
+        containers -any
+    default-language: Haskell2010
+    hs-source-dirs: src
+    ghc-options: -Wall -Werror
+
+executable rps
+    main-is: Main.hs
+    build-depends:
+        base -any,
+        rps -any,
+        regret -any
+    default-language: Haskell2010
+    hs-source-dirs: app
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -Wall -Werror

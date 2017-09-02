@@ -1,41 +1,43 @@
-name:                dudo
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/davidspies/dudo#readme
-license:             GPL-3
-license-file:        LICENSE
-author:              David Spies
-maintainer:          dnspies@gmail.com
-copyright:           2017 David Spies
-category:            Game
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
-
-library
-  hs-source-dirs:      src
-  exposed-modules:     Game.Dudo
-  build-depends:       base >= 4.7 && < 5
-                     , regret
-                     , select-game
-                     , MemoTrie
-                     , hashable
-                     , vector
-  default-language:    Haskell2010
-  ghc-options:        -Wall -Werror
-
-executable dudo
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  build-depends:       base
-                     , dudo
-                     , regret
-                     , select-game
-                     , optparse-applicative
-  default-language:    Haskell2010
+name: dudo
+version: 0.1.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: GPL-3
+license-file: LICENSE
+copyright: 2017 David Spies
+maintainer: dnspies@gmail.com
+homepage: https://github.com/davidspies/dudo#readme
+category: Game
+author: David Spies
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
-  location: https://github.com/davidspies/dudo
+    type: git
+    location: https://github.com/davidspies/dudo
+
+library
+    exposed-modules:
+        Game.Dudo
+    build-depends:
+        base >=4.7 && <5,
+        regret -any,
+        select-game -any,
+        MemoTrie -any,
+        hashable -any,
+        vector -any
+    default-language: Haskell2010
+    hs-source-dirs: src
+    ghc-options: -Wall -Werror
+
+executable dudo
+    main-is: Main.hs
+    build-depends:
+        base -any,
+        dudo -any,
+        regret -any,
+        select-game -any,
+        optparse-applicative -any
+    default-language: Haskell2010
+    hs-source-dirs: app
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
