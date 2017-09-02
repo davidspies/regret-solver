@@ -25,7 +25,6 @@ library
         containers -any
     default-language: Haskell2010
     hs-source-dirs: src
-    ghc-options: -Wall -Werror
 
 executable rps
     main-is: Main.hs
@@ -35,4 +34,4 @@ executable rps
         regret -any
     default-language: Haskell2010
     hs-source-dirs: app
-    ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -Wall -Werror
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N

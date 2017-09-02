@@ -47,4 +47,3 @@ library
         Game.Regret.Internal
         Game.Regret.Monad
         Orphans
-    ghc-options: -Wall -Werror

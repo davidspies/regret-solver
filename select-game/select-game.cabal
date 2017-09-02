@@ -36,4 +36,3 @@ library
         Game.Select.Internal
         Game.Select.Items
         Orphans
-    ghc-options: -Wall -Werror
