@@ -29,13 +29,14 @@ checkOrBet = DVec.fromList [Check, Bet]
 callOrFold :: DVec.Vector (Action KuhnPoker Calling)
 callOrFold = DVec.fromList [Call, Fold]
 
+mapPlayers :: (PlayerIndex -> a) -> (a, a)
+mapPlayers f = (f leftPlayer, f rightPlayer)
+
 leftBetting, rightBetting :: SGM KuhnPoker (Action KuhnPoker Betting)
-[leftBetting, rightBetting] =
-  [turnSelect KuhnPoker Betting p checkOrBet | p <- [leftPlayer, rightPlayer]]
+(leftBetting, rightBetting) = mapPlayers $ \p -> turnSelect KuhnPoker Betting p checkOrBet
 
 leftCalling, rightCalling :: SGM KuhnPoker (Action KuhnPoker Calling)
-[leftCalling, rightCalling] =
-  [turnSelect KuhnPoker Calling p callOrFold | p <- [leftPlayer, rightPlayer]]
+(leftCalling, rightCalling) = mapPlayers $ \p -> turnSelect KuhnPoker Calling p callOrFold
 
 firstDraw :: Dist Card
 firstDraw = Dist.normalize $ NonEmpty.map (1,) cards
@@ -144,6 +145,7 @@ instance UnParam (Phase KuhnPoker) where
     Betting -> UBetting
     Calling -> UCalling
 
-leftPlayer :: PlayerIndex
-rightPlayer :: PlayerIndex
-[leftPlayer, rightPlayer] = playerList 2
+leftPlayer, rightPlayer :: PlayerIndex
+(leftPlayer, rightPlayer) = case playerList 2 of
+  [lp, rp] -> (lp, rp)
+  _        -> error "unreachable"

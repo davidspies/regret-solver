@@ -17,7 +17,7 @@ module Game.Regret.Monad
     ) where
 
 import Control.Monad (ap, forM_, void, when)
-import Control.Monad.Random (MonadRandom, MonadSTRandom(..))
+import Control.Monad.Random (MonadRandom(..), MonadSTRandom(..), stGetUniform, stGetUniformR)
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
@@ -110,7 +110,9 @@ instance MonadSTRandom (Regret m v) where
     Env{tenv = TopEnv{randSource}} <- ask
     liftST $ srcOp randSource
 
-instance MonadRandom (Regret m v)
+instance MonadRandom (Regret m v) where
+  getUniform = stGetUniform
+  getUniformR = stGetUniformR
 
 newtype TopRegret m v a = TopRegret (forall s. ReaderT (TopEnv m s v) (ST s) a)
   deriving (Functor)

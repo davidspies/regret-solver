@@ -1,13 +1,13 @@
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TupleSections #-}
 
 module Control.Monad.Random
     ( MonadRandom(..)
     , MonadSTRandom(..)
     , uniformList
     , uniformListSubset
+    , stGetUniform
+    , stGetUniformR
     ) where
 
 import Control.Monad (unless)
@@ -22,11 +22,13 @@ import System.Random.PCG (GenST, Variate, uniform, uniformR)
 
 class Monad m => MonadRandom m where
   getUniform :: Variate a => m a
-  default getUniform :: (MonadSTRandom m, Variate a) => m a
-  getUniform = withGen uniform
   getUniformR :: Variate a => (a, a) -> m a
-  default getUniformR :: (MonadSTRandom m, Variate a) => (a, a) -> m a
-  getUniformR bnds = withGen (uniformR bnds)
+
+stGetUniform :: (MonadSTRandom m, Variate a) => m a
+stGetUniform = withGen uniform
+
+stGetUniformR :: (MonadSTRandom m, Variate a) => (a, a) -> m a
+stGetUniformR bnds = withGen (uniformR bnds)
 
 class MonadRandom m => MonadSTRandom m where
   withGen :: (forall s. GenST s -> ST s a) -> m a

@@ -54,4 +54,6 @@ instance Game RPS where
 
 leftPlayer :: PlayerIndex
 rightPlayer :: PlayerIndex
-[leftPlayer, rightPlayer] = playerList 2
+(leftPlayer, rightPlayer) = case playerList 2 of
+  [lp, rp] -> (lp, rp)
+  _        -> error "unreachable"

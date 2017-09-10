@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TupleSections #-}
 
 module Data.Dist.Internal
     ( SDist
@@ -39,6 +38,7 @@ normalize xs
   where
     posified = NonEmpty.map (first (max 0)) xs
     total = sum $ NonEmpty.map fst posified
+    uniProb :: Float
     uniProb = 1 / fromIntegral (length xs)
 
 expected :: (Vector a) => SDist a -> a

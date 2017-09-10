@@ -67,7 +67,7 @@ newtype AVMap g v = AVMap (Map.VecMap v)
 
 type instance Map.Key (AVMap g) = Game.Action (SelectGame g)
 
-instance Items g => Game.Items (SelectGame g) where
+instance Game.Items (SelectGame g) where
   data State (SelectGame g) = forall p.
     SGWState (Select.Packed' (StateInfos g) (ActionInputs g) p (Value g))
   type Value (SelectGame g) = Value g
