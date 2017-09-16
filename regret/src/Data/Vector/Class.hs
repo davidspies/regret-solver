@@ -22,6 +22,7 @@ import qualified Data.Vector as DVec
 
 import Data.Map.Generic (Map)
 import qualified Data.Map.Generic as Map
+import Data.Map.VecMap (VecMap)
 
 class Vector v where
   scale :: Float -> v -> v
@@ -103,7 +104,7 @@ instance Vector a => Vector (IntMap a) where
   zero = genericZeroMap
   vsum = genericVSumMap
 
-instance Vector a => Vector (Map.VecMap a) where
+instance Vector a => Vector (VecMap a) where
   scale = genericScaleMap
   add = genericAddMap
   vnegate = genericVNegateMap

@@ -17,6 +17,7 @@ import GHC.Generics (Generic)
 
 import qualified Data.Map.Generic as Map
 import qualified Data.Map.Mutable.Generic as MMap
+import Data.Map.VecMap (VecMap)
 import Data.Vector.Class (Vector)
 import qualified Game
 import Game.PlayerMap (PlayerIndex, PlayerMap)
@@ -62,7 +63,7 @@ startInfo g = case startState g of
 
 newtype StateInfos g p = Infos (PlayerMap (InfoSet g p))
 
-newtype AVMap g v = AVMap (Map.VecMap v)
+newtype AVMap g v = AVMap (VecMap v)
   deriving (Functor, Foldable, Traversable, Map.Map, Show)
 
 type instance Map.Key (AVMap g) = Game.Action (SelectGame g)

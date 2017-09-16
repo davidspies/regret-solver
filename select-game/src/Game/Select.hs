@@ -15,6 +15,7 @@ import qualified Data.Strict.Maybe as Strict
 import qualified Data.Vector as DVec
 
 import qualified Data.Map.Generic as Map
+import Data.Map.VecMap (VecMap(VecMap))
 import qualified Game
 import Game.PlayerMap (initPlayerMap)
 
@@ -29,7 +30,7 @@ instance Game g => Game.Game (SelectGame g) where
   getPrimitiveValue _ (SGWState (Finished v)) = Just v
   getPrimitiveValue _ (SGWState (Option _ _)) = Nothing
   getActions _ (IS (Some InfoSet{options})) =
-    AVMap $ Map.VecMap $ DVec.replicate (DVec.length options) (Strict.Just ())
+    AVMap $ VecMap $ DVec.replicate (DVec.length options) (Strict.Just ())
   applyActions _ _ (SGWState (Finished _)) = error "Game over"
   applyActions _ selection (SGWState (Option _ continue)) =
       asGS <$> continue (ActionInputs $ fmap aInd selection)

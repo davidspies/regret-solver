@@ -21,6 +21,7 @@ library
         Data.Dist
         Data.Map.Generic
         Data.Map.Mutable.Generic
+        Data.Map.VecMap
         Data.Vector.Class
         Game
         Game.PlayerMap

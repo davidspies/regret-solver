@@ -29,6 +29,7 @@ import qualified Data.Vector as DVec
 import Prelude hiding (elem, lookup)
 
 import Data.Map.Generic
+import Data.Map.VecMap
 import Data.Vector.Class (Vector)
 
 newtype PlayerIndex = PI Int
