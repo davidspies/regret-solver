@@ -11,6 +11,7 @@ module Data.Vector.Class
     , genericSubApplicative
     , genericZeroApplicative
     , genericVSumApplicative
+    , vMaybe
     ) where
 
 import Control.Applicative (liftA2)
@@ -18,6 +19,8 @@ import Data.IntMap.Strict (IntMap)
 import Data.List (foldl')
 import qualified Data.Map.Strict as StrictMap
 import Data.Maybe (fromJust, fromMaybe, isJust)
+import qualified Data.Strict.Maybe as Strict
+import qualified Data.Strict.Maybe.Util as Strict
 import qualified Data.Vector as DVec
 
 import Data.Map.Generic (Map)
@@ -144,3 +147,15 @@ instance Vector a => Vector (DVec.Vector a) where
           lenv = DVec.length v
   vnegate = DVec.map vnegate
   zero = DVec.empty
+
+instance Vector a => Vector (Strict.Maybe a) where
+  scale = fmap . scale
+  add = Strict.joinWith add
+  vnegate = fmap vnegate
+  zero = Strict.Nothing
+  vsum xs = case Strict.catMaybes xs of
+    []       -> Strict.Nothing
+    (x : xr) -> Strict.Just $ foldl' add x xr
+
+vMaybe :: Vector a  => Strict.Maybe a -> a
+vMaybe = Strict.fromMaybe zero

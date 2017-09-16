@@ -7,8 +7,8 @@ module Data.Map.VecMap
     ) where
 
 import Control.Monad (forM_)
-import Data.Maybe (mapMaybe)
 import qualified Data.Strict as Strict
+import qualified Data.Strict.Maybe.Util as Strict
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as Mutable.DVec
 
@@ -46,9 +46,6 @@ unifyLengths x y = (resizedv x lm, resizedv y lm)
     determineLJ n = if vhasKey (n - 1) x || vhasKey (n - 1) y then n else determineLJ (n - 1)
     lm = determineLJ (max (DVec.length x) (DVec.length y))
 
-strictCatMaybes :: [Strict.Maybe a] -> [a]
-strictCatMaybes = mapMaybe (Strict.maybe Nothing Just)
-
 ground :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe a)
 ground v = foldr seq v v
 
@@ -61,19 +58,16 @@ instance Map VecMap where
     ) . unvm
   null = all Strict.isNothing . unvm
   (!) (VecMap v) = Strict.fromJust . (v DVec.!)
-  toList = strictCatMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
+  toList = Strict.catMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
   mapWithKey func = VecMap . ground . DVec.imap (fmap . func) . unvm
   size = length
-  elems = strictCatMaybes . DVec.toList . unvm
+  elems = Strict.catMaybes . DVec.toList . unvm
   delete k = VecMap . DVec.modify (\vr ->
       Mutable.DVec.write vr k Strict.Nothing
     ) . unvm
-  unionWith func (VecMap x) (VecMap y) = VecMap $ ground $ DVec.zipWith func' x' y'
+  unionWith func (VecMap x) (VecMap y) = VecMap $ ground $ DVec.zipWith (Strict.joinWith func) x' y'
     where
       (x', y') = unifyLengths x y
-      func' Strict.Nothing y1                 = y1
-      func' x1 Strict.Nothing                 = x1
-      func' (Strict.Just x1) (Strict.Just y1) = Strict.Just $ func x1 y1
   intersectionWith func (VecMap x) (VecMap y) =
       VecMap $ ground $ DVec.zipWith func' x' y'
     where

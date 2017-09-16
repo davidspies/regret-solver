@@ -45,6 +45,7 @@ library
         Control.Monad.Scale
         Data.Dist.Internal
         Data.Normalizing
+        Data.Strict.Maybe.Util
         Game.Regret.Internal
         Game.Regret.Monad
         Orphans

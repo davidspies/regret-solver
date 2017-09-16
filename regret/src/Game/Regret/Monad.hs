@@ -23,6 +23,7 @@ import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
 import Data.Maybe (isNothing)
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef, writeSTRef)
+import qualified Data.Strict.Maybe as Strict
 import System.Random.PCG (GenST)
 import qualified System.Random.PCG as PCG
 
@@ -40,20 +41,21 @@ data Env m s v = Env
   }
 
 data AccumNode v = AccumNode
-  { accumValue :: !v
+  { accumValue :: !(Strict.Maybe v)
   , prevValue  :: !v
   , visits     :: !Int
   , lastUpdate :: !Int
   }
 
-newAccum :: Vector v => Int -> v -> AccumNode v
+newAccum :: Int -> v -> AccumNode v
 newAccum current value =
-  AccumNode{accumValue = zero, prevValue = value, visits = 1, lastUpdate = current}
+  AccumNode{accumValue = Strict.Nothing, prevValue = value, visits = 1, lastUpdate = current}
 
 update :: (Normalizing v, Vector v) => Int -> AccumNode v -> AccumNode v
 update current AccumNode{..} = AccumNode
   { accumValue =
-      accumValue `add` scale (fromIntegral (current - lastUpdate)) (untypedNormalize prevValue)
+      accumValue `add`
+      Strict.Just (scale (fromIntegral (current - lastUpdate)) (untypedNormalize prevValue))
   , prevValue
   , visits
   , lastUpdate = current
@@ -160,10 +162,10 @@ regretValue k = Regret $ do
   Env{tenv = TopEnv{regretMap}} <- ask
   liftST $ fmap normalize <$> Mutable.Map.lookup k regretMap
 
-averageValue :: (Normalizing v, Mutable.Map m) => Key m -> Regret m v (Maybe (Normal v))
+averageValue :: (Vector v, Normalizing v, Mutable.Map m) => Key m -> Regret m v (Maybe (Normal v))
 averageValue k = Regret $ do
   Env{tenv = TopEnv{accumMap}} <- ask
-  liftST $ fmap (normalize . accumValue) <$> Mutable.Map.lookup k accumMap
+  liftST $ fmap (normalize . vMaybe . accumValue) <$> Mutable.Map.lookup k accumMap
 
 runRegret :: (Mutable.Map m, Ord (Key m), Normalizing v, Vector v)
   => PCG.FrozenGen -> TopRegret m v () -> [(Key m, v, Int)]
@@ -175,5 +177,5 @@ runRegret g (TopRegret r) =
     randSource <- PCG.restore g
     runReaderT r TopEnv{..}
     current <- readSTRef iteration
-    map (\(k, x) -> (k, accumValue (update current x), visits x)) . sortOn fst <$>
+    map (\(k, x) -> (k, vMaybe $ accumValue (update current x), visits x)) . sortOn fst <$>
       Mutable.Map.toList accumMap
