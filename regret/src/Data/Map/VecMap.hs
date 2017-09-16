@@ -30,21 +30,15 @@ resizedv v n =
   case compare lv n of
     LT -> v DVec.++ DVec.replicate (n - lv) Strict.Nothing
     EQ -> v
-    GT -> DVec.slice 0 n v
+    GT -> error "Cannot shrink vectors"
   where
     lv = DVec.length v
-
-vhasKey :: Int -> DVec.Vector (Strict.Maybe a) -> Bool
-vhasKey n x = maybe False Strict.isJust (x DVec.!? n)
 
 unifyLengths :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe b)
   -> (DVec.Vector (Strict.Maybe a), DVec.Vector (Strict.Maybe b))
 unifyLengths x y = (resizedv x lm, resizedv y lm)
   where
-    determineLJ :: Int -> Int
-    determineLJ 0 = 0
-    determineLJ n = if vhasKey (n - 1) x || vhasKey (n - 1) y then n else determineLJ (n - 1)
-    lm = determineLJ (max (DVec.length x) (DVec.length y))
+    lm = max (DVec.length x) (DVec.length y)
 
 ground :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe a)
 ground v = foldr seq v v
