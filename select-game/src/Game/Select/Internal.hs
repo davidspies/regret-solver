@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -10,14 +9,16 @@
 
 module Game.Select.Internal where
 
+import Data.Default (Default)
 import qualified Data.DList as DList
 import Data.Hashable (Hashable(..))
 import qualified Data.Vector as DVec
+import Data.Vector.Unboxed (Unbox)
 import GHC.Generics (Generic)
 
 import qualified Data.Map.Generic as Map
 import qualified Data.Map.Mutable.Generic as MMap
-import Data.Map.VecMap (VecMap)
+import qualified Data.Map.VecMap.Unboxed as VUM
 import Data.Vector.Class (Vector)
 import qualified Game
 import Game.PlayerMap (PlayerIndex, PlayerMap)
@@ -42,6 +43,8 @@ class
   , Hashable (Reset g)
   , Hashable (Reveal g)
   , Items g
+  , Default (Value g)
+  , Unbox (Value g)
   , Vector (Value g)
   ) => Game g where
   getNumPlayers :: g -> Int
@@ -63,9 +66,9 @@ startInfo g = case startState g of
 
 newtype StateInfos g p = Infos (PlayerMap (InfoSet g p))
 
-type instance Map.MapValue (AVMap g) a = ()
-newtype AVMap g v = AVMap (VecMap v)
-  deriving (Functor, Foldable, Traversable, Map.Map, Show)
+type instance Map.MapValue (AVMap g) a = (Default a, Unbox a)
+newtype AVMap g v = AVMap (VUM.VecMap v)
+  deriving (Map.Map, Show)
 
 type instance Map.Key (AVMap g) = Game.Action (SelectGame g)
 

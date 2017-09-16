@@ -24,6 +24,7 @@ library
     build-depends:
         base >=4.7 && <5,
         game -any,
+        data-default -any,
         dlist -any,
         hashable -any,
         strict -any,

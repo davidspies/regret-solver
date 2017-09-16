@@ -14,16 +14,14 @@ module Game.Dudo (Dudo (..)) where
 import Data.Hashable (Hashable)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe)
 import Data.MemoTrie (memo, memo2)
 import qualified Data.Vector as DVec
 import GHC.Generics (Generic)
 
 import Control.Monad.Select (chance)
 import qualified Data.Dist as Dist
-import qualified Data.Map.Generic as Map
 import Data.Some (EqAll, HashableAll, OrdAll, ShowAll(..), Some(Some), UnParam(..))
-import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap, playerList)
+import Game.PlayerMap (PlayerIndex, PlayerMap, playerList)
 import qualified Game.PlayerMap as PlayerMap
 import Game.Select
 import qualified Game.Select as Select (Game)
@@ -34,9 +32,17 @@ acceptOrChallenge = DVec.fromList [Accept, Challenge]
 startReset :: Int -> Reset Dudo
 startReset numPlayers = R {alive = NonEmpty.fromList $ playerList numPlayers, lastClaim = 0}
 
+player1, player2 :: PlayerIndex
+(player1, player2) = case playerList 2 of
+  [p1, p2] -> (p1, p2)
+  _        -> error "Unreachable"
+
 instance Select.Game Dudo where
   getNumPlayers = numPlayers
-  getUtility Dudo{} p = fromMaybe 0 . Map.lookup p
+  getUtility Dudo{} p
+    | p == player1 = id
+    | p == player2 = negate
+    | otherwise = error "Only 2 players currently supported"
   startState Dudo{numPlayers} = (startReset numPlayers, Some Claiming)
   game g@Dudo{numPlayers, dieSides} = do
     let
@@ -94,15 +100,17 @@ data Dudo = Dudo
   }
 
 pwin :: Int -> PlayerIndex -> Value Dudo
-pwin numPlayers p =
-  Map.adjust (+ fromIntegral numPlayers) p
-    (initPlayerMap numPlayers $ const $ Just (-1))
+pwin 2 p
+  | p == player1 = 1.0
+  | p == player2 = -1.0
+  | otherwise = error "player out of bounds"
+pwin _ _ = error "Only 2 players currently supported"
 
 data Claiming
 data Challenging
 
 instance Game.Select.Items Dudo where
-  type Value Dudo = PlayerMap Float
+  type Value Dudo = Float
   data Phase Dudo p where
     Challenging :: Phase Dudo Challenging
     Claiming :: Phase Dudo Claiming
