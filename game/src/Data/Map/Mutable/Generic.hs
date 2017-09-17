@@ -17,6 +17,7 @@ import Control.Monad.ST (ST)
 import Data.Hashable (Hashable, Hashed, hashed, unhashed)
 import qualified Data.HashTable.Class as C
 import qualified Data.HashTable.ST.Cuckoo as HTM
+import qualified Data.Map.Strict as StrictMap
 import Data.STRef (STRef, modifySTRef, newSTRef, readSTRef)
 import Prelude hiding (lookup)
 
@@ -71,11 +72,11 @@ instance (Eq k, Hashable k) => Map (HTable k) where
     , Delete (deleteHashed hk)
     )
 
-newtype STMap m s v = STMap (STRef s (m v))
+newtype STMap k s v = STMap (STRef s (StrictMap.Map k v))
 
-type instance Key (STMap m) = Immutable.Key m
+type instance Key (STMap k) = k
 
-instance Immutable.Map m => Map (STMap m) where
+instance Ord k => Map (STMap k) where
   lookup k (STMap r) = Immutable.lookup k <$> readSTRef r
   insertWith join k v (STMap r) = modifySTRef r $ Immutable.insertWith join k v
   insert k v (STMap r) = modifySTRef r $ Immutable.insert k v

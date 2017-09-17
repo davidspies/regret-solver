@@ -63,10 +63,14 @@ startInfo g = case startState g of
 
 newtype StateInfos g p = Infos (PlayerMap (InfoSet g p))
 
+type instance Map.MapValue (AVMap g) a = ()
 newtype AVMap g v = AVMap (VecMap v)
   deriving (Functor, Foldable, Traversable, Map.Map, Show)
 
 type instance Map.Key (AVMap g) = Game.Action (SelectGame g)
+
+instance Map.KeyTraversable (AVMap g) where
+  traverseWithKey func (AVMap vm) = AVMap <$> Map.traverseWithKey (func . A) vm
 
 instance Game.Items (SelectGame g) where
   data State (SelectGame g) = forall p.

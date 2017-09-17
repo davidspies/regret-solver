@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Game
     ( Items(..)
@@ -23,7 +25,11 @@ class Items g where
 
 class ( Vector (Value g)
       , Mutable.Map (InfoMap g), Mutable.Map.Key (InfoMap g) ~ InfoSet g, Ord (InfoSet g)
-      , Map.Map (ActionMap g), Map.Key (ActionMap g) ~ Action g
+      , Map.KeyTraversable (ActionMap g), Map.Key (ActionMap g) ~ Action g
+      , Map.MapValue (ActionMap g) ()
+      , Map.MapValue (ActionMap g) Float
+      , Map.MapValue (ActionMap g) (Int, Float)
+      , Map.MapValue (ActionMap g) (Value g)
       , Items g
       ) => Game g where
   getNumPlayers :: g -> Int

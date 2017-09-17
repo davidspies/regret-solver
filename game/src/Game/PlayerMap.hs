@@ -24,9 +24,10 @@ module Game.PlayerMap
 import Data.Coerce (coerce)
 import Data.Hashable (Hashable)
 import Data.MemoTrie (HasTrie(..))
-import qualified Data.Strict.Maybe as Strict
+import qualified Data.Strict as Strict
 import qualified Data.Vector as DVec
 import Prelude hiding (elem, lookup)
+import qualified Prelude as P
 
 import Data.Map.Generic
 import Data.Map.VecMap
@@ -45,13 +46,17 @@ instance HasTrie PlayerIndex where
   untrie = coerce (untrie @Int)
   enumerate = coerce (filter ((>= 0) . fst) . enumerate @Int)
 
+type instance MapValue PlayerMap a = ()
 newtype PlayerMap a = PlayerMap (VecMap a)
   deriving (Show, Functor, Foldable, Traversable, Vector, Map)
 
 type instance Key PlayerMap = PlayerIndex
 
+instance KeyTraversable PlayerMap where
+  traverseWithKey func (PlayerMap m) = PlayerMap <$> traverseWithKey (func . PI) m
+
 playerList :: Int -> [PlayerIndex]
-playerList numPlayers = map PI [0..(numPlayers-1)]
+playerList numPlayers = P.map PI [0..(numPlayers-1)]
 
 initPlayerMap :: Int -> (PlayerIndex -> Maybe a) -> PlayerMap a
 initPlayerMap numPlayers playerOp =

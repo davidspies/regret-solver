@@ -23,7 +23,7 @@ import qualified Data.Strict.Maybe as Strict
 import qualified Data.Strict.Maybe.Util as Strict
 import qualified Data.Vector as DVec
 
-import Data.Map.Generic (Map)
+import Data.Map.Generic (Map, MapValue)
 import qualified Data.Map.Generic as Map
 import Data.Map.VecMap (VecMap)
 
@@ -77,20 +77,15 @@ instance (Vector a, Vector b) => Vector (a, b) where
   zero = (zero, zero)
   vsum prs = let (xs, ys) = unzip prs in (vsum xs, vsum ys)
 
-genericScaleFunctor :: (Functor m, Vector x) => Float -> m x -> m x
-genericScaleFunctor = fmap . scale
-genericVNegateFunctor :: (Functor m, Vector x) => m x -> m x
-genericVNegateFunctor = fmap vnegate
-
-genericScaleMap :: (Map m, Vector x) => Float -> m x -> m x
-genericScaleMap = genericScaleFunctor
-genericAddMap :: (Map m, Vector x) => m x -> m x -> m x
+genericScaleMap :: (Map m, Vector x, MapValue m x) => Float -> m x -> m x
+genericScaleMap = Map.map . scale
+genericAddMap :: (Map m, Vector x, MapValue m x) => m x -> m x -> m x
 genericAddMap = Map.unionWith add
-genericVNegateMap :: (Map m, Vector x) => m x -> m x
-genericVNegateMap = genericVNegateFunctor
-genericZeroMap :: (Map m) => m x
+genericVNegateMap :: (Map m, Vector x, MapValue m x) => m x -> m x
+genericVNegateMap = Map.map vnegate
+genericZeroMap :: (Map m, MapValue m x) => m x
 genericZeroMap = Map.empty
-genericVSumMap :: (Map m, Vector x) => [m x] -> m x
+genericVSumMap :: (Map m, Vector x, MapValue m x) => [m x] -> m x
 genericVSumMap = Map.unionsWith add
 
 instance (Ord k, Vector a) => Vector (StrictMap.Map k a) where
@@ -115,11 +110,11 @@ instance Vector a => Vector (VecMap a) where
   vsum = genericVSumMap
 
 genericScaleApplicative :: (Applicative m, Vector x) => Float -> m x -> m x
-genericScaleApplicative = genericScaleFunctor
+genericScaleApplicative = fmap . scale
 genericAddApplicative :: (Applicative a, Vector x) => a x -> a x -> a x
 genericAddApplicative = liftA2 add
 genericVNegateApplicative :: (Applicative m, Vector x) => m x -> m x
-genericVNegateApplicative = genericVNegateFunctor
+genericVNegateApplicative = fmap vnegate
 genericSubApplicative :: (Applicative a, Vector x) => a x -> a x -> a x
 genericSubApplicative = liftA2 sub
 genericZeroApplicative :: (Applicative a, Vector x) => a x

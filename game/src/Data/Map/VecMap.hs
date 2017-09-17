@@ -10,11 +10,12 @@ import Control.Monad (forM_)
 import Data.Strict.Maybe
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as Mutable.DVec
-import Prelude hiding (Maybe(..), maybe)
+import Prelude hiding (Maybe(..), map, maybe)
 import qualified Prelude as P
 
-import Data.Map.Generic (Key, Map(..))
+import Data.Map.Generic (Key, KeyTraversable(..), Map(..), MapValue)
 import Data.Strict.Maybe.Util
+import Orphans ()
 
 newtype VecMap a = VecMap {unvm :: DVec.Vector (Maybe a)}
   deriving (Foldable, Show)
@@ -26,6 +27,7 @@ instance Traversable VecMap where
   traverse func (VecMap v) = VecMap . ground <$> traverse (traverse func) v
 
 type instance Key VecMap = Int
+type instance MapValue VecMap a = ()
 
 resizedv :: DVec.Vector (Maybe a) -> Int -> DVec.Vector (Maybe a)
 resizedv v n =
@@ -36,14 +38,15 @@ resizedv v n =
   where
     lv = DVec.length v
 
-unifyLengths :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
+unifyLengths
+  :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
   -> (DVec.Vector (Maybe a), DVec.Vector (Maybe b))
 unifyLengths x y = (resizedv x lm, resizedv y lm)
   where
     lm = max (DVec.length x) (DVec.length y)
 
 ground :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe a)
-ground v = foldr seq v v
+ground v = DVec.foldr seq v v
 
 instance Map VecMap where
   lookup k (VecMap v) = P.maybe P.Nothing (maybe P.Nothing P.Just) (v DVec.!? k)
@@ -52,11 +55,11 @@ instance Map VecMap where
       let newval = fmap func curVal
       newval `seq` Mutable.DVec.write vr k newval
     ) . unvm
-  null = all isNothing . unvm
+  null = DVec.all isNothing . unvm
   (!) (VecMap v) = fromJust . (v DVec.!)
   toList = catMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
   mapWithKey func = VecMap . ground . DVec.imap (fmap . func) . unvm
-  size = length
+  size = DVec.foldl' (const . (+ 1)) 0 . unvm
   elems = catMaybes . DVec.toList . unvm
   delete k = VecMap . DVec.modify (\vr ->
       Mutable.DVec.write vr k Nothing
@@ -85,4 +88,10 @@ instance Map VecMap where
       forM_ kvs $ \(k,v) -> Mutable.DVec.modify vr (Just . maybe v (`op` v)) k
     ) (DVec.replicate len Nothing)
     where
-      len = maximum (map fst kvs) + 1
+      len = maximum (P.map fst kvs) + 1
+
+instance KeyTraversable VecMap where
+  traverseWithKey func =
+    fmap (VecMap . ground) . DVec.imapM (\i ->
+      maybe (pure Nothing) (fmap Just . func i)
+    ) . unvm

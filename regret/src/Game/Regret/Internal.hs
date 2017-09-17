@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Game.Regret.Internal (playouts) where
 
@@ -18,6 +20,8 @@ import qualified Data.Dist as Dist
 import Data.Map.Generic (Key, Map)
 import qualified Data.Map.Generic as Map
 import Data.Normalizing (Normalizing(..))
+import Data.SelectionMap (SelectionMap, SelectionPath(..), noPaths, nullPaths)
+import qualified Data.SelectionMap as S
 import Data.Vector.Class (Vector(..))
 import qualified Data.Vector.Class as Vector
 import Game
@@ -33,7 +37,7 @@ type TRG g = TopRegret (InfoMap g) (Node (ActionMap g))
 fetchPolicy :: Game g => g -> InfoSet g -> RG g (Dist (Action g))
 fetchPolicy g info = fromMaybe startNode <$> Monad.regretValue info
   where
-    startNode = normalize $ Node $ const 0 <$> getActions g info
+    startNode = normalize $ Node $ Map.map (const 0) $ getActions g info
 
 getInfos :: Game g => g -> Game.State g -> PlayerMap (InfoSet g)
 getInfos g curState = initPlayerMap (getNumPlayers g) $ \i -> getInfoSet g i curState
@@ -47,20 +51,20 @@ probe g curState = case getPrimitiveValue g curState of
     selections <- mapM sample policies
     sample (applyActions g selections curState) >>= probe g
 
-selectPlayerActions :: (Map a, MonadSTRandom m)
-  => a () -> SelectionPath -> m (a (SelectionPath, Float))
+selectPlayerActions :: (Map a, Map.MapValue a (), Map.MapValue a (Int, Float), MonadSTRandom m)
+  => a () -> SelectionPath -> m (SelectionMap a)
 selectPlayerActions acts (SelectionPath npaths) =
   if
     | npaths > Map.size acts -> do
         let numEach = npaths `quot` Map.size acts
-        return $ const (SelectionPath numEach, 1) <$> acts
+        return $ S.map (const (SelectionPath numEach, 1)) acts
     | npaths == 1 -> do
         selected <- uniformList $ NonEmpty.fromList $ Map.keys acts
-        return $ Map.singleton selected (SelectionPath 1, 1 / fromIntegral (Map.size acts))
+        return $ S.singleton selected (SelectionPath 1, 1 / fromIntegral (Map.size acts))
     | otherwise -> do
         selecteds <- uniformListSubset npaths $ Map.keys acts
         let probScale = fromIntegral npaths / fromIntegral (Map.size acts)
-        return $ Map.fromList $ map (, (SelectionPath 1, probScale)) selecteds
+        return $ S.fromList $ map (, (SelectionPath 1, probScale)) selecteds
 
 outcomes :: Game g
   => g -> PlayerIndex -> SelectionPath -> Game.State g -> PlayerMap (Dist (Action g))
@@ -71,13 +75,11 @@ outcomes g p path curState policies = do
       Nothing   -> NotMyTurn <$> doActions selections path
       Just acts -> do
         selected <- selectPlayerActions acts path
-        let chosenActions = Map.mapWithKey ((. Just) . (,)) selected
-            otherActions  = Map.mapWithKey (const . (, Nothing)) acts
-        fmap MyTurn $ forM (Map.union chosenActions otherActions) $ \(a, xs) ->
-          case xs of
-            Just (newpath, probScale) ->
-              scaleBy (1 / probScale) (doActions (Map.insert p a selections) newpath)
-            Nothing -> sample (applyActions g (Map.insert p a selections) curState) >>= probe g
+        let allActs = S.union selected (S.map (const (noPaths, 0)) acts)
+        fmap MyTurn $ S.forMWithKey allActs $ \a (newpath, probScale) ->
+          if nullPaths newpath
+            then sample (applyActions g (Map.insert p a selections) curState) >>= probe g
+            else scaleBy (1 / probScale) (doActions (Map.insert p a selections) newpath)
   where
     doActions ma newpath = sample (applyActions g ma curState) >>= playout g p newpath
 
@@ -88,7 +90,7 @@ processRegrets g p info myPolicy r = do
   let ut = getUtility g p
       ev = expected $ (r Map.!) <$> myPolicy
       utev = ut ev
-  Monad.addRegret info $ Node $ (\v -> ut v - utev) <$> r
+  Monad.addRegret info $ Node $ Map.map (\v -> ut v - utev) r
   return ev
 
 playout :: Game g => g -> PlayerIndex -> SelectionPath -> Game.State g -> RG g (Value g)
@@ -103,28 +105,27 @@ playout g p path curState =
         NotMyTurn v -> return v
 
 newtype Node m = Node (m Float)
-newtype SelectionPath = SelectionPath Int
 
-instance Map m => Vector (Node m) where
+instance (Map.MapValue m Float, Map m) => Vector (Node m) where
   scale c (Node m) = Node $ Vector.genericScaleMap c m
   add (Node v) (Node w) = Node $ Vector.genericAddMap v w
   zero = Node Vector.genericZeroMap
   vnegate (Node m) = Node $ Vector.genericVNegateMap m
   vsum = Node . Vector.genericVSumMap . map (\(Node m) -> m)
 
-instance Map m => Normalizing (Node m) where
+instance (Map.MapValue m Float, Map m) => Normalizing (Node m) where
   type Normal (Node m) = Dist (Key m)
   normalize (Node m) = Dist.normalize $ NonEmpty.fromList $ map Tuple.swap $ Map.toList m
   forget = Node . Map.fromList . map Tuple.swap . Dist.pieces
   untypedNormalize (Node m)
     | Map.null m = error "Empty map"
     | otherwise = Node $
-        fmap (if tot <= 0
+        Map.map (if tot <= 0
           then const (1 / fromIntegral (Map.size m))
           else (\x -> if x <= 0 then 0 else x / tot)
         ) m
     where
-      tot = foldl' (\v x -> if x <= 0 then v else v + x) 0 m
+      tot = foldl' (\v x -> if x <= 0 then v else v + x) 0 (Map.elems m)
 
 playouts :: Game g => g -> Int -> Int -> TRG g ()
 playouts g count npaths = do

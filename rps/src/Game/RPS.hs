@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -13,10 +12,10 @@ import Game.PlayerMap (PlayerIndex, playerList)
 
 data RPS = RPS
 
-newtype IMRPS a = IMRPS (StrictMap.Map PlayerIndex a)
-  deriving (Functor, Foldable, Map.Map, Show, Traversable)
+newtype IMRPS s a = IMRPS (MMap.STMap PlayerIndex s a)
+  deriving MMap.Map
 
-type instance Map.Key IMRPS = InfoSet RPS
+type instance MMap.Key IMRPS = InfoSet RPS
 
 instance Game.Items RPS where
   data State RPS = PreMove | PostMove (Action RPS) (Action RPS)
@@ -27,7 +26,7 @@ instance Game.Items RPS where
   data (Action RPS) = Rock | Paper | Scissors
     deriving (Eq, Ord, Show)
   type ActionMap RPS = StrictMap.Map (Action RPS)
-  type InfoMap RPS = MMap.STMap IMRPS
+  type InfoMap RPS = IMRPS
 
 instance Game RPS where
   getNumPlayers RPS = 2
