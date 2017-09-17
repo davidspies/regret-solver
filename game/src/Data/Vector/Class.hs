@@ -15,6 +15,7 @@ module Data.Vector.Class
     ) where
 
 import Control.Applicative (liftA2)
+import Data.Default (Default)
 import Data.IntMap.Strict (IntMap)
 import Data.List (foldl')
 import qualified Data.Map.Strict as StrictMap
@@ -22,10 +23,12 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import qualified Data.Strict.Maybe as Strict
 import qualified Data.Strict.Maybe.Util as Strict
 import qualified Data.Vector as DVec
+import Data.Vector.Unboxed (Unbox)
 
 import Data.Map.Generic (Map, MapValue)
 import qualified Data.Map.Generic as Map
-import Data.Map.VecMap (VecMap)
+import qualified Data.Map.VecMap as VM
+import qualified Data.Map.VecMap.Unboxed as VMU
 
 class Vector v where
   scale :: Float -> v -> v
@@ -102,7 +105,14 @@ instance Vector a => Vector (IntMap a) where
   zero = genericZeroMap
   vsum = genericVSumMap
 
-instance Vector a => Vector (VecMap a) where
+instance (Vector a, Default a, Unbox a) => Vector (VMU.VecMap a) where
+  scale = genericScaleMap
+  add = genericAddMap
+  vnegate = genericVNegateMap
+  zero = genericZeroMap
+  vsum = genericVSumMap
+
+instance (Vector a) => Vector (VM.VecMap a) where
   scale = genericScaleMap
   add = genericAddMap
   vnegate = genericVNegateMap
