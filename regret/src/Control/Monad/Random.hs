@@ -10,14 +10,12 @@ module Control.Monad.Random
     , stGetUniformR
     ) where
 
-import Control.Monad (unless)
-import Control.Monad.Loops (whileM_)
+import Control.Monad (forM_)
 import Control.Monad.ST (ST)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.STRef (modifySTRef, newSTRef, readSTRef)
-import qualified Data.Vector.Storable as DVec
-import qualified Data.Vector.Storable.Mutable as DMVec
+import qualified Data.Vector as DVec
+import qualified Data.Vector.Mutable as DMVec
 import System.Random.PCG (GenST, Variate, uniform, uniformR)
 
 class Monad m => MonadRandom m where
@@ -38,26 +36,13 @@ uniformList xs = do
   let lenxs = length xs
   (NonEmpty.toList xs !!) <$> getUniformR (0, lenxs - 1)
 
-xor :: Bool -> Bool -> Bool
-xor False = id
-xor True  = not
-
 uniformListSubset :: MonadSTRandom m => Int -> [a] -> m [a]
-uniformListSubset k xs = let lenxs = length xs in
-  if
-    | k <= 0 -> return []
-    | k >= lenxs -> return xs
-    | otherwise -> do
-        let halflen = lenxs `quot` 2
-            (inverted, count) = if k > halflen then (True, lenxs - k) else (False, k)
-        selecteds <- withGen $ \gen -> do
-          selected <- DMVec.replicate lenxs False
-          nselected <- newSTRef (0 :: Int)
-          whileM_ ((< count) <$> readSTRef nselected) $ do
-            i <- uniformR (0, lenxs - 1) gen
-            isRepeat <- DMVec.read selected i
-            unless isRepeat $ do
-              DMVec.write selected i True
-              modifySTRef nselected (+ 1)
-          DVec.freeze selected
-        return [x | (c, x) <- zip (DVec.toList selecteds) xs, inverted `xor` c]
+uniformListSubset k xs
+  | k <= 0 = return []
+  | null $ drop k xs = return xs
+  | otherwise = fmap DVec.toList $ withGen $ \gen -> do
+      let vxs = DVec.fromList xs
+          lenxs = DVec.length vxs
+      v <- DVec.thaw vxs
+      forM_ [0..(k - 1)] $ \i -> DMVec.swap v i =<< uniformR (i, lenxs - 1) gen
+      DVec.take k <$> DVec.freeze v
