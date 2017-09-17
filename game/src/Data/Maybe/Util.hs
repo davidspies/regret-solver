@@ -1,6 +1,6 @@
 module Data.Maybe.Util
-    ( joinWith
+    ( unionWith
     ) where
 
-joinWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
-joinWith op x = maybe x (Just . maybe id op x)
+unionWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
+unionWith op x = maybe x (Just . maybe id op x)

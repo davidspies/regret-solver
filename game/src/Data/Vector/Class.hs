@@ -21,7 +21,8 @@ import Data.List (foldl')
 import qualified Data.Map.Strict as StrictMap
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import qualified Data.Strict.Maybe as Strict
-import qualified Data.Strict.Maybe.Util as Strict
+import qualified Data.Strict.Maybe.Util as Strict (catMaybes)
+import qualified Data.Strict.Maybe.Util as Strict.Maybe
 import qualified Data.Vector as DVec
 import Data.Vector.Unboxed (Unbox)
 
@@ -155,7 +156,7 @@ instance Vector a => Vector (DVec.Vector a) where
 
 instance Vector a => Vector (Strict.Maybe a) where
   scale = fmap . scale
-  add = Strict.joinWith add
+  add = Strict.Maybe.unionWith add
   vnegate = fmap vnegate
   zero = Strict.Nothing
   vsum xs = case Strict.catMaybes xs of

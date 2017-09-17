@@ -1,6 +1,6 @@
 module Data.Strict.Maybe.Util
     ( catMaybes
-    , joinWith
+    , unionWith
     ) where
 
 import qualified Data.Maybe as Unstrict
@@ -10,5 +10,5 @@ import Prelude hiding (Maybe(..), maybe)
 catMaybes :: [Maybe a] -> [a]
 catMaybes = Unstrict.mapMaybe (maybe Unstrict.Nothing Unstrict.Just)
 
-joinWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
-joinWith op x = maybe x (Just . maybe id op x)
+unionWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
+unionWith op x = maybe x (Just . maybe id op x)

@@ -16,7 +16,7 @@ import Prelude hiding (map)
 import qualified Prelude as P
 
 import Data.Map.Generic (Key, KeyTraversable(..), Map(..), MapValue)
-import Data.Maybe.Util (joinWith)
+import qualified Data.Maybe.Util as Maybe
 import Orphans ()
 
 newtype VecMap a = VecMap {unvm :: DVec.Vector (Maybe a)}
@@ -57,7 +57,7 @@ instance Map VecMap where
   delete k = VecMap . DVec.modify (\vr ->
       Mutable.DVec.write vr k Nothing
     ) . unvm
-  unionWith func (VecMap x) (VecMap y) = VecMap $ DVec.zipWith (joinWith func) x' y'
+  unionWith func (VecMap x) (VecMap y) = VecMap $ DVec.zipWith (Maybe.unionWith func) x' y'
     where
       (x', y') = unifyLengths x y
   intersectionWith func (VecMap x) (VecMap y) =
