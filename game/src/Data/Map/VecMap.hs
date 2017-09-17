@@ -7,14 +7,16 @@ module Data.Map.VecMap
     ) where
 
 import Control.Monad (forM_)
-import qualified Data.Strict as Strict
-import qualified Data.Strict.Maybe.Util as Strict
+import Data.Strict.Maybe
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as Mutable.DVec
+import Prelude hiding (Maybe(..), maybe)
+import qualified Prelude as P
 
 import Data.Map.Generic (Key, Map(..))
+import Data.Strict.Maybe.Util
 
-newtype VecMap a = VecMap {unvm :: DVec.Vector (Strict.Maybe a)}
+newtype VecMap a = VecMap {unvm :: DVec.Vector (Maybe a)}
   deriving (Foldable, Show)
 
 instance Functor VecMap where
@@ -25,62 +27,62 @@ instance Traversable VecMap where
 
 type instance Key VecMap = Int
 
-resizedv :: DVec.Vector (Strict.Maybe a) -> Int -> DVec.Vector (Strict.Maybe a)
+resizedv :: DVec.Vector (Maybe a) -> Int -> DVec.Vector (Maybe a)
 resizedv v n =
   case compare lv n of
-    LT -> v DVec.++ DVec.replicate (n - lv) Strict.Nothing
+    LT -> v DVec.++ DVec.replicate (n - lv) Nothing
     EQ -> v
     GT -> error "Cannot shrink vectors"
   where
     lv = DVec.length v
 
-unifyLengths :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe b)
-  -> (DVec.Vector (Strict.Maybe a), DVec.Vector (Strict.Maybe b))
+unifyLengths :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe b)
+  -> (DVec.Vector (Maybe a), DVec.Vector (Maybe b))
 unifyLengths x y = (resizedv x lm, resizedv y lm)
   where
     lm = max (DVec.length x) (DVec.length y)
 
-ground :: DVec.Vector (Strict.Maybe a) -> DVec.Vector (Strict.Maybe a)
+ground :: DVec.Vector (Maybe a) -> DVec.Vector (Maybe a)
 ground v = foldr seq v v
 
 instance Map VecMap where
-  lookup k (VecMap v) = maybe Nothing (Strict.maybe Nothing Just) (v DVec.!? k)
+  lookup k (VecMap v) = P.maybe P.Nothing (maybe P.Nothing P.Just) (v DVec.!? k)
   adjust func k = VecMap . DVec.modify (\vr -> do
       curVal <- Mutable.DVec.read vr k
       let newval = fmap func curVal
       newval `seq` Mutable.DVec.write vr k newval
     ) . unvm
-  null = all Strict.isNothing . unvm
-  (!) (VecMap v) = Strict.fromJust . (v DVec.!)
-  toList = Strict.catMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
+  null = all isNothing . unvm
+  (!) (VecMap v) = fromJust . (v DVec.!)
+  toList = catMaybes . zipWith (fmap . (,)) [0..] . DVec.toList . unvm
   mapWithKey func = VecMap . ground . DVec.imap (fmap . func) . unvm
   size = length
-  elems = Strict.catMaybes . DVec.toList . unvm
+  elems = catMaybes . DVec.toList . unvm
   delete k = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.write vr k Strict.Nothing
+      Mutable.DVec.write vr k Nothing
     ) . unvm
-  unionWith func (VecMap x) (VecMap y) = VecMap $ ground $ DVec.zipWith (Strict.joinWith func) x' y'
+  unionWith func (VecMap x) (VecMap y) = VecMap $ ground $ DVec.zipWith (joinWith func) x' y'
     where
       (x', y') = unifyLengths x y
   intersectionWith func (VecMap x) (VecMap y) =
       VecMap $ ground $ DVec.zipWith func' x' y'
     where
       (x', y') = unifyLengths x y
-      func' (Strict.Just x1) (Strict.Just y1) = Strict.Just $ func x1 y1
-      func' _ _                               = Strict.Nothing
+      func' (Just x1) (Just y1) = Just $ func x1 y1
+      func' _ _                 = Nothing
   singleton k !v =
-    VecMap (DVec.replicate k Strict.Nothing DVec.++ DVec.singleton (Strict.Just v))
+    VecMap (DVec.replicate k Nothing DVec.++ DVec.singleton (Just v))
   insertWith func k v = VecMap . DVec.modify (\vr -> do
       curVal <- Mutable.DVec.read vr k
-      let newval = Strict.Just $ Strict.maybe v (func v) curVal
+      let newval = Just $ maybe v (func v) curVal
       newval `seq` Mutable.DVec.write vr k newval
     ) . unvm
   insert k !v = VecMap . DVec.modify (\vr ->
-      Mutable.DVec.write vr k (Strict.Just v)
+      Mutable.DVec.write vr k (Just v)
     ) . unvm
   empty = VecMap DVec.empty
   fromListWith op kvs = VecMap $ ground $ DVec.modify (\vr ->
-      forM_ kvs $ \(k,v) -> Mutable.DVec.modify vr (Strict.Just . Strict.maybe v (`op` v)) k
-    ) (DVec.replicate len Strict.Nothing)
+      forM_ kvs $ \(k,v) -> Mutable.DVec.modify vr (Just . maybe v (`op` v)) k
+    ) (DVec.replicate len Nothing)
     where
       len = maximum (map fst kvs) + 1
