@@ -6,7 +6,7 @@ license: GPL-3
 license-file: LICENSE
 copyright: 2017 David Spies
 maintainer: dnspies@gmail.com
-homepage: https://github.com/davidspies/rps#readme
+homepage: https://github.com/davidspies/regret-solver#readme
 category: Game
 author: David Spies
 extra-source-files:
@@ -14,7 +14,7 @@ extra-source-files:
 
 source-repository head
     type: git
-    location: https://github.com/davidspies/regret
+    location: https://github.com/davidspies/regret-solver
 
 library
     exposed-modules:
