@@ -18,34 +18,18 @@ source-repository head
 
 library
     exposed-modules:
-        Data.Dist
-        Data.Map.Generic
-        Data.Map.Mutable.Generic
-        Data.Map.VecMap
-        Data.Vector.Class
-        Game
-        Game.PlayerMap
         Game.Regret
     build-depends:
         base >=4.7 && <5,
-        MemoTrie -any,
-        containers -any,
-        hashable -any,
-        hashtables -any,
-        monad-loops -any,
+        game -any,
         mtl -any,
         optparse-applicative -any,
         pcg-random -any,
-        strict -any,
-        vector -any
+        strict -any
     default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
-        Control.Monad.Random
         Control.Monad.Scale
-        Data.Dist.Internal
         Data.Normalizing
-        Data.Strict.Maybe.Util
         Game.Regret.Internal
         Game.Regret.Monad
-        Orphans

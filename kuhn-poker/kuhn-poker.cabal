@@ -21,7 +21,7 @@ library
         Game.KuhnPoker
     build-depends:
         base >=4.7 && <5,
-        regret -any,
+        game -any,
         select-game -any,
         hashable -any,
         vector -any
