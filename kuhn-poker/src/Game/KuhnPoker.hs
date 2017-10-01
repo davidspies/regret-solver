@@ -20,7 +20,8 @@ import Control.Monad.Select (chance)
 import Data.Dist (Dist)
 import qualified Data.Dist as Dist
 import qualified Data.Vector.Class as Vector
-import Game.PlayerMap (PlayerIndex, playerList)
+import Game.PlayerMap (PlayerIndex)
+import qualified Game.PlayerMap as Player
 import Game.Select
 import qualified Game.Select as Select (Game)
 
@@ -30,13 +31,13 @@ callOrFold :: DVec.Vector (Action KuhnPoker Calling)
 callOrFold = DVec.fromList [Call, Fold]
 
 mapPlayers :: (PlayerIndex -> a) -> (a, a)
-mapPlayers f = (f leftPlayer, f rightPlayer)
+mapPlayers f = (f Player.Left, f Player.Right)
 
 leftBetting, rightBetting :: SGM KuhnPoker (Action KuhnPoker Betting)
-(leftBetting, rightBetting) = mapPlayers $ \p -> turnSelect KuhnPoker Betting p checkOrBet
+(leftBetting, rightBetting) = mapPlayers $ \p -> turnSelect Betting p checkOrBet
 
 leftCalling, rightCalling :: SGM KuhnPoker (Action KuhnPoker Calling)
-(leftCalling, rightCalling) = mapPlayers $ \p -> turnSelect KuhnPoker Calling p callOrFold
+(leftCalling, rightCalling) = mapPlayers $ \p -> turnSelect Calling p callOrFold
 
 firstDraw :: Dist Card
 firstDraw = Dist.normalize $ NonEmpty.map (1,) cards
@@ -48,20 +49,18 @@ secondDrawMissing = (missingItem !!) . fromEnum
       [Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting c | c <- [Jack ..]]
 
 instance Select.Game KuhnPoker where
-  getNumPlayers KuhnPoker = 2
-  getUtility KuhnPoker p d
-    | p == leftPlayer = d
-    | p == rightPlayer = -d
-    | otherwise = error "Only a 2-player game."
+  getUtility KuhnPoker p d = case p of
+    Player.Left  -> d
+    Player.Right -> -d
   startState KuhnPoker = (Start, Some Betting)
   game KuhnPoker = do
     noop
     leftCard <- chance firstDraw
-    reveal leftPlayer (Draw leftCard)
+    reveal Player.Left (Draw leftCard)
     rightCard <- chance (secondDrawMissing leftCard)
-    reveal rightPlayer (Draw rightCard)
+    reveal Player.Right (Draw rightCard)
     leftAction <- leftBetting
-    revealAll (Acts leftPlayer $ Some leftAction)
+    revealAll (Acts Player.Left $ Some leftAction)
     let compareVal = compareCards leftCard rightCard
     case leftAction of
       Bet -> do
@@ -74,7 +73,7 @@ instance Select.Game KuhnPoker where
         case rightAction of
           Check -> return compareVal
           Bet   -> do
-            revealAll (Acts rightPlayer $ Some rightAction)
+            revealAll (Acts Player.Right $ Some rightAction)
             secondLeftAction <- leftCalling
             return $
               case secondLeftAction of
@@ -144,8 +143,3 @@ instance UnParam (Phase KuhnPoker) where
   unparam = \case
     Betting -> UBetting
     Calling -> UCalling
-
-leftPlayer, rightPlayer :: PlayerIndex
-(leftPlayer, rightPlayer) = case playerList 2 of
-  [lp, rp] -> (lp, rp)
-  _        -> error "unreachable"

@@ -8,7 +8,8 @@ import qualified Data.Map.Strict as StrictMap
 import qualified Data.Map.Generic as Map
 import qualified Data.Map.Mutable.Generic as MMap
 import Game
-import Game.PlayerMap (PlayerIndex, playerList)
+import Game.PlayerMap (PlayerIndex)
+import qualified Game.PlayerMap as Player
 
 data RPS = RPS
 
@@ -29,7 +30,6 @@ instance Game.Items RPS where
   type InfoMap RPS = IMRPS
 
 instance Game RPS where
-  getNumPlayers RPS = 2
   getPrimitiveValue RPS PreMove                      = Nothing
   getPrimitiveValue RPS (PostMove Rock Rock)         = Just 0
   getPrimitiveValue RPS (PostMove Rock Paper)        = Just (-1)
@@ -43,16 +43,10 @@ instance Game RPS where
   getActions RPS =
     const (StrictMap.fromList [(Rock, ()), (Paper, ()), (Scissors, ())])
   applyActions RPS acts =
-    const $ return $ PostMove (acts Map.! leftPlayer) (acts Map.! rightPlayer)
+    const $ return $ PostMove (acts Map.! Player.Left) (acts Map.! Player.Right)
   getInfoSet RPS = const . Just . RPSIS
   getUtility RPS p v
-    | p == leftPlayer = v
-    | p == rightPlayer = -v
+    | p == Player.Left = v
+    | p == Player.Right = -v
     | otherwise = error "Only a 2-player game"
   startState RPS = PreMove
-
-leftPlayer :: PlayerIndex
-rightPlayer :: PlayerIndex
-(leftPlayer, rightPlayer) = case playerList 2 of
-  [lp, rp] -> (lp, rp)
-  _        -> error "unreachable"

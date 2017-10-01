@@ -19,7 +19,7 @@ import Game.PlayerMap (PlayerIndex, PlayerMap, initPlayerMap)
 
 import Control.Monad.Select.Internal (Some(Some), select)
 import qualified Control.Monad.Select.Internal as Select
-import Game.Select.Internal (ActionInputs(..), Game, SGM, StateInfos(..), getNumPlayers)
+import Game.Select.Internal (ActionInputs(..), SGM, StateInfos(..))
 import Game.Select.Items
 
 doReveal :: Reveal g -> InfoSet g p -> InfoSet g p
@@ -42,36 +42,28 @@ reset r =
 
 data PlayerOptions g p = PlayerOptions (Phase g p) (PlayerMap (DVec.Vector (Action g p)))
 
-turnOptions :: Game g => g -> Phase g p -> PlayerIndex -> DVec.Vector (Action g p)
-            -> PlayerOptions g p
-turnOptions g p i acts =
-  PlayerOptions p
-    (initPlayerMap (getNumPlayers g) (\j -> Just $ if j == i then acts else DVec.empty))
+turnOptions :: Phase g p -> PlayerIndex -> DVec.Vector (Action g p) -> PlayerOptions g p
+turnOptions p i acts =
+  PlayerOptions p (initPlayerMap (\j -> Just $ if j == i then acts else DVec.empty))
 
-turnSelect :: Game g
-  => g -> Phase g p -> PlayerIndex -> DVec.Vector (Action g p) -> SGM g (Action g p)
-turnSelect g p i acts = (Map.! i) <$> optionsSelect (turnOptions g p i acts)
+turnSelect :: Phase g p -> PlayerIndex -> DVec.Vector (Action g p) -> SGM g (Action g p)
+turnSelect p i acts = (Map.! i) <$> optionsSelect (turnOptions p i acts)
 
-offTurnOptions :: Game g
-  => g -> Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
+offTurnOptions :: Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
   -> PlayerOptions g p
-offTurnOptions g p i afn =
-  PlayerOptions p
-    (initPlayerMap (getNumPlayers g) (\j -> Just $ if j == i then DVec.empty else afn j))
+offTurnOptions p i afn =
+  PlayerOptions p (initPlayerMap (\j -> Just $ if j == i then DVec.empty else afn j))
 
-offTurnSelect :: Game g
-  => g -> Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
+offTurnSelect :: Phase g p -> PlayerIndex -> (PlayerIndex -> DVec.Vector (Action g p))
   -> SGM g (PlayerMap (Action g p))
-offTurnSelect g p i afn = optionsSelect (offTurnOptions g p i afn)
+offTurnSelect p i afn = optionsSelect (offTurnOptions p i afn)
 
-allOptions :: Game g
-  => g -> Phase g p -> (PlayerIndex -> DVec.Vector (Action g p))
-  -> PlayerOptions g p
-allOptions g p afn = PlayerOptions p (initPlayerMap (getNumPlayers g) (Just . afn))
+allOptions :: Phase g p -> (PlayerIndex -> DVec.Vector (Action g p)) -> PlayerOptions g p
+allOptions p afn = PlayerOptions p (initPlayerMap (Just . afn))
 
-allSelect :: Game g
-  => g -> Phase g p -> (PlayerIndex -> DVec.Vector (Action g p)) -> SGM g (PlayerMap (Action g p))
-allSelect g p afn = optionsSelect (allOptions g p afn)
+allSelect :: Phase g p -> (PlayerIndex -> DVec.Vector (Action g p))
+  -> SGM g (PlayerMap (Action g p))
+allSelect p afn = optionsSelect (allOptions p afn)
 
 optionsSelect :: PlayerOptions g p -> SGM g (PlayerMap (Action g p))
 optionsSelect (PlayerOptions phase playerOptions) =

@@ -26,7 +26,6 @@ import Game.Select.Internal
 import Game.Select.Items
 
 instance Game g => Game.Game (SelectGame g) where
-  getNumPlayers (SelectGame g) = getNumPlayers g
   getPrimitiveValue _ (SGWState (Finished v)) = Just v
   getPrimitiveValue _ (SGWState (Option _ _)) = Nothing
   getActions _ (IS (Some InfoSet{options})) =
@@ -47,9 +46,6 @@ instance Game g => Game.Game (SelectGame g) where
     PlayerStart sp ->
       asSome $ Select.pack $ runSelect
         (game g)
-        (Infos
-          (initPlayerMap (getNumPlayers g)
-          (Just . sp))
-        )
+        (Infos (initPlayerMap (Just . sp)))
     where
       asSome (Packed v) = SGWState v

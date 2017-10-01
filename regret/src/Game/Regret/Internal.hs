@@ -40,7 +40,7 @@ fetchPolicy g info = fromMaybe startNode <$> Monad.regretValue info
     startNode = normalize $ Node $ Map.map (const 0) $ getActions g info
 
 getInfos :: Game g => g -> Game.State g -> PlayerMap (InfoSet g)
-getInfos g curState = initPlayerMap (getNumPlayers g) $ \i -> getInfoSet g i curState
+getInfos g curState = initPlayerMap $ \i -> getInfoSet g i curState
 
 probe :: Game g => g -> Game.State g -> RG g (Value g)
 probe g curState = case getPrimitiveValue g curState of
@@ -131,5 +131,5 @@ playouts :: Game g => g -> Int -> Int -> TRG g ()
 playouts g count npaths = do
   let start = startState g
   replicateM_ count $
-    forM_ (playerList (getNumPlayers g)) $ \p ->
+    forM_ playerList $ \p ->
       Monad.saveRegrets_ $ playout g p (SelectionPath npaths) start

@@ -32,7 +32,6 @@ class ( Vector (Value g)
       , Map.MapValue (ActionMap g) (Value g)
       , Items g
       ) => Game g where
-  getNumPlayers :: g -> Int
   getPrimitiveValue :: g -> State g -> Maybe (Value g)
   getActions :: g -> InfoSet g -> ActionMap g ()
   applyActions :: g -> PlayerMap (Action g) -> State g -> Dist (State g)
