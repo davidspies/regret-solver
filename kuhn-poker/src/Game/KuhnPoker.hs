@@ -46,7 +46,7 @@ secondDrawMissing :: Card -> Dist Card
 secondDrawMissing = (missingItem !!) . fromEnum
   where
     missingItem =
-      [Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting c | c <- [Jack ..]]
+      [Dist.normalize $ NonEmpty.map (1,) $ cardsExcepting c | c <- [minBound ..]]
 
 instance Select.Game KuhnPoker where
   getUtility KuhnPoker p d = case p of
@@ -81,13 +81,13 @@ instance Select.Game KuhnPoker where
                 Call -> Vector.scale 2 compareVal
 
 data Card = Jack | Queen | King
-  deriving (Eq, Ord, Show, Generic, Enum, Hashable)
+  deriving (Eq, Ord, Show, Generic, Bounded, Enum, Hashable)
 
 cards :: NonEmpty Card
-cards = NonEmpty.fromList [Jack ..]
+cards = NonEmpty.fromList [minBound ..]
 
 cardsExcepting :: Card -> NonEmpty Card
-cardsExcepting card = NonEmpty.fromList [c | c <- [Jack ..], c /= card]
+cardsExcepting card = NonEmpty.fromList [c | c <- [minBound ..], c /= card]
 
 data KuhnPoker = KuhnPoker
 

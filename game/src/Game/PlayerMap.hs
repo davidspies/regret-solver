@@ -40,7 +40,7 @@ import Data.Vector.Class
     (Vector(..), genericAddMap, genericScaleMap, genericVNegateMap, genericVSumMap, genericZeroMap)
 
 data PlayerIndex = Left | Right
-  deriving (Eq, Ord, Show, Enum, Generic, Hashable)
+  deriving (Eq, Ord, Show, Bounded, Enum, Generic, Hashable)
 
 instance HasTrie PlayerIndex where
   data (:->:) PlayerIndex a = PlayerTrie a a
@@ -110,7 +110,7 @@ initPlayerMap playerOp =
   PlayerMap (Maybe.toStrict $ playerOp Left) (Maybe.toStrict $ playerOp Right)
 
 playerList :: [PlayerIndex]
-playerList = [Left ..]
+playerList = [minBound ..]
 
 opposite :: PlayerIndex -> PlayerIndex
 opposite = \case {Left -> Right; Right -> Left}
