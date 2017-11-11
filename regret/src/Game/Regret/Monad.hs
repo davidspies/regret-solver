@@ -1,13 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Game.Regret.Monad
-    ( MonadRandom
-    , Regret
+    ( Regret
     , TopRegret
     , averageValue
     , addRegret
@@ -17,7 +18,6 @@ module Game.Regret.Monad
     ) where
 
 import Control.Monad (ap, forM_, void, when)
-import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
@@ -27,6 +27,7 @@ import qualified Data.Strict.Maybe as Strict
 import System.Random.PCG (GenST)
 import qualified System.Random.PCG as PCG
 
+import Control.Monad.Random (Randomizable(..))
 import Control.Monad.Scale
 import Data.Map.Mutable.Generic as Mutable (Map)
 import Data.Map.Mutable.Generic as Mutable.Map
@@ -112,7 +113,7 @@ withGen srcOp = Regret $ do
   Env{tenv = TopEnv{randSource}} <- ask
   liftST $ srcOp randSource
 
-instance MonadRandom (Regret m v) where
+instance PCG.Variate a => Randomizable (Regret m v) a where
   getUniform = withGen PCG.uniform
   getUniformR bnds = withGen (PCG.uniformR bnds)
 

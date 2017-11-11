@@ -1,8 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE Rank2Types #-}
 
 module Control.Monad.Random
-    ( MonadRandom(..)
+    ( Randomizable(..)
     , uniformList
     , uniformListSubset
     ) where
@@ -13,18 +14,17 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as DMVec
-import System.Random.PCG (Variate)
 
-class Monad m => MonadRandom m where
-  getUniform :: Variate a => m a
-  getUniformR :: Variate a => (a, a) -> m a
+class Monad m => Randomizable m a where
+  getUniform :: m a
+  getUniformR :: (a, a) -> m a
 
-uniformList :: MonadRandom m => NonEmpty a -> m a
+uniformList :: Randomizable m Int => NonEmpty a -> m a
 uniformList xs = do
   let lenxs = length xs
   (NonEmpty.toList xs !!) <$> getUniformR (0, lenxs - 1)
 
-uniformListSubset :: MonadRandom m => Int -> [a] -> m [a]
+uniformListSubset :: Randomizable m Int => Int -> [a] -> m [a]
 uniformListSubset k xs
   | k <= 0 = return []
   | k >= lenxs = return xs

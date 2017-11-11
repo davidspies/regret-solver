@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Data.Dist.Internal
     ( SDist
@@ -12,7 +13,7 @@ module Data.Dist.Internal
     ) where
 
 import Control.Arrow (first)
-import Control.Monad.Random (MonadRandom, getUniform)
+import Control.Monad.Random (Randomizable, getUniform)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -47,7 +48,7 @@ expected (SDist xs) = Vector.vsum [Vector.scale d x | (d, x) <- NonEmpty.toList 
 accumsOf :: SDist a -> NonEmpty (Float, a)
 accumsOf (SDist xs) = NonEmpty.scanl1 (\(cur, _) (d, y) -> (cur + d, y)) xs
 
-sample :: MonadRandom m => SDist a -> m a
+sample :: Randomizable m Float => SDist a -> m a
 sample ds = do
   let accumed = accumsOf ds
   d <- getUniform

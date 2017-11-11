@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Data.Dist
@@ -13,7 +14,7 @@ module Data.Dist
 
 import Control.Arrow (first)
 import Control.Monad (ap)
-import Control.Monad.Random (MonadRandom)
+import Control.Monad.Random (Randomizable)
 import Data.Dist.Internal (SDist)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -44,7 +45,7 @@ expected d = case d of
   Bottom s -> s
   Level s  -> SDist.expected $ expected <$> s
 
-sample :: MonadRandom m => Dist a -> m a
+sample :: Randomizable m Float => Dist a -> m a
 sample d = case d of
   Bottom s -> return s
   Level s  -> SDist.sample s >>= sample
