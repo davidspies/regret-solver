@@ -1,9 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Data.SelectionMap
-    ( SelectionPath (..)
-    , SelectionMap
+module Game.Regret.Options.SelectionPath.Map
+    ( SelectionMap
     , forMWithKey
     , fromList
     , map
@@ -18,8 +17,7 @@ import Prelude hiding (map)
 
 import Data.Map.Generic (Key, Map)
 import qualified Data.Map.Generic as Map
-
-newtype SelectionPath = SelectionPath Int
+import Game.Regret.Options.SelectionPath
 
 newtype SelectionMap a = SelectionMap (a (Int, Float))
 
@@ -42,9 +40,3 @@ forMWithKey (SelectionMap m) = Map.forMWithKey m . coerce
 union :: forall a. (Map a, Map.MapValue a (Int, Float))
   => SelectionMap a -> SelectionMap a -> SelectionMap a
 union = coerce $ Map.union @a @(Int, Float)
-
-noPaths :: SelectionPath
-noPaths = SelectionPath 0
-
-nullPaths :: SelectionPath -> Bool
-nullPaths (SelectionPath x) = x == 0

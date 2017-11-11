@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TupleSections #-}
 
 module Control.Monad.Random
     ( MonadRandom(..)
@@ -10,7 +11,7 @@ module Control.Monad.Random
     , stGetUniformR
     ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, zipWithM)
 import Control.Monad.ST (ST)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -31,18 +32,23 @@ stGetUniformR bnds = withGen (uniformR bnds)
 class MonadRandom m => MonadSTRandom m where
   withGen :: (forall s. GenST s -> ST s a) -> m a
 
-uniformList :: MonadRandom m => NonEmpty a -> m a
-uniformList xs = do
-  let lenxs = length xs
-  (NonEmpty.toList xs !!) <$> getUniformR (0, lenxs - 1)
+uniformList :: MonadRandom m => NonEmpty a -> (Bool -> a -> m b) -> m (a, NonEmpty b)
+uniformList xs f = do
+  let nxs = NonEmpty.toList xs
+      lenxs = length nxs
+  choice <- getUniformR (0, lenxs - 1)
+  res <- zipWithM (\i -> f (i == choice)) [0..] nxs
+  return (nxs !! choice, NonEmpty.fromList res)
 
-uniformListSubset :: MonadSTRandom m => Int -> [a] -> m [a]
-uniformListSubset k xs
-  | k <= 0 = return []
-  | null $ drop k xs = return xs
-  | otherwise = fmap DVec.toList $ withGen $ \gen -> do
-      let vxs = DVec.fromList xs
-          lenxs = DVec.length vxs
-      v <- DVec.thaw vxs
-      forM_ [0..(k - 1)] $ \i -> DMVec.swap v i =<< uniformR (i, lenxs - 1) gen
-      DVec.take k <$> DVec.freeze v
+uniformListSubset :: MonadSTRandom m => Int -> [a] -> (Bool -> a -> m b) -> m ([a], [b])
+uniformListSubset k xs f
+  | k <= 0 = ([],) <$> mapM (f False) xs
+  | null $ drop k xs = (xs,) <$> mapM (f True) xs
+  | otherwise = do
+      chosen <- fmap DVec.toList $ withGen $ \gen -> do
+        let lenxs = length xs
+        v <- DVec.thaw $ DVec.replicate k True DVec.++ DVec.replicate (lenxs - k) False
+        forM_ [0..(lenxs - 1)] $ \i -> DMVec.swap v i =<< uniformR (i, lenxs - 1) gen
+        DVec.freeze v
+      res <- zipWithM f chosen xs
+      return (map snd $ filter fst $ zip chosen xs, res)

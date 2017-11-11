@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Dist
     ( Dist
@@ -8,6 +9,7 @@ module Data.Dist
     , normalize
     , pieces
     , sample
+    , uniform
     , withProbability
     ) where
 
@@ -60,9 +62,12 @@ withProbability (Bottom d) = Bottom (1, d)
 withProbability (Level d) =
   Level $ (\(m, x) -> first (m *) <$> withProbability x) <$> SDist.withProbability d
 
-pieces :: Dist a -> [(Probability, a)]
-pieces d = go 1 d []
+pieces :: Dist a -> NonEmpty (Probability, a)
+pieces d = NonEmpty.fromList $ go 1 d []
   where
     go mult = \case
       Bottom d' -> ((mult, d') :)
       Level d'  -> foldr1 (.) $ NonEmpty.map (uncurry $ go . (* mult)) $ SDist.nonZeroPieces d'
+
+uniform :: NonEmpty a -> Dist a
+uniform = normalize . NonEmpty.map (1,)

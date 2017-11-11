@@ -31,6 +31,8 @@ library
     other-modules:
         Control.Monad.Scale
         Data.Normalizing
-        Data.SelectionMap
         Game.Regret.Internal
         Game.Regret.Monad
+        Game.Regret.Options.Class
+        Game.Regret.Options.SelectionPath
+        Game.Regret.Options.SelectionPath.Map
