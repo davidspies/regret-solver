@@ -8,7 +8,7 @@
 module Game.Regret.Internal (playouts) where
 
 import Control.Monad (forM, forM_, replicateM_)
-import Control.Monad.Random (MonadSTRandom, uniformList, uniformListSubset)
+import Control.Monad.Random (MonadRandom, uniformList, uniformListSubset)
 import Data.Foldable (foldl')
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
@@ -51,7 +51,7 @@ probe g curState = case getPrimitiveValue g curState of
     selections <- mapM sample policies
     sample (applyActions g selections curState) >>= probe g
 
-selectPlayerActions :: (Map a, Map.MapValue a (), Map.MapValue a (Int, Float), MonadSTRandom m)
+selectPlayerActions :: (Map a, Map.MapValue a (), Map.MapValue a (Int, Float), MonadRandom m)
   => a () -> SelectionPath -> m (SelectionMap a)
 selectPlayerActions acts (SelectionPath npaths) =
   if

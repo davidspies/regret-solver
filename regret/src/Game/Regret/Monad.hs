@@ -17,7 +17,7 @@ module Game.Regret.Monad
     ) where
 
 import Control.Monad (ap, forM_, void, when)
-import Control.Monad.Random (MonadRandom(..), MonadSTRandom(..), stGetUniform, stGetUniformR)
+import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT, withReaderT)
 import Control.Monad.ST (ST, runST)
 import Data.List (sortOn)
@@ -107,14 +107,14 @@ instance MonadScale (Regret m v) where
     withReaderT (\e@Env{scaleFactor} -> e{scaleFactor = c * scaleFactor}) v
   coefficient = Regret $ scaleFactor <$> ask
 
-instance MonadSTRandom (Regret m v) where
-  withGen srcOp = Regret $ do
-    Env{tenv = TopEnv{randSource}} <- ask
-    liftST $ srcOp randSource
+withGen :: (forall s. GenST s -> ST s a) -> Regret m v a
+withGen srcOp = Regret $ do
+  Env{tenv = TopEnv{randSource}} <- ask
+  liftST $ srcOp randSource
 
 instance MonadRandom (Regret m v) where
-  getUniform = stGetUniform
-  getUniformR = stGetUniformR
+  getUniform = withGen PCG.uniform
+  getUniformR bnds = withGen (PCG.uniformR bnds)
 
 newtype TopRegret m v a = TopRegret (forall s. ReaderT (TopEnv m s v) (ST s) a)
   deriving (Functor)
