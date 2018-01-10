@@ -10,7 +10,7 @@ import Control.Monad (forM_)
 import Data.Strict.Maybe
 import qualified Data.Vector as DVec
 import qualified Data.Vector.Mutable as Mutable.DVec
-import Prelude hiding (Maybe(..), map, maybe)
+import Prelude hiding (Maybe(..), maybe)
 import qualified Prelude as P
 
 import Data.Map.Generic (Key, KeyTraversable(..), Map(..), MapValue)
